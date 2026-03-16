@@ -70,6 +70,7 @@ exports.imageRules = [
         selector: 'uni-image-full-width',
         element: 'figure',
         transform: (el, doc) => {
+            var _a;
             const figure = doc.createElement('figure');
             const img = doc.createElement('img');
             // Find the original image element
@@ -114,7 +115,7 @@ exports.imageRules = [
             const figcaptionEl = el.querySelector('figcaption');
             if (figcaptionEl) {
                 // Extract text content, potentially from nested elements like <p>
-                const captionText = figcaptionEl.textContent?.trim();
+                const captionText = (_a = figcaptionEl.textContent) === null || _a === void 0 ? void 0 : _a.trim();
                 if (captionText && captionText.length > 5) { // Basic check for meaningful caption
                     const figcaption = doc.createElement('figcaption');
                     // Try to get cleaner text from specific inner element if possible
@@ -455,6 +456,7 @@ function findMainImage(element) {
  * Find caption in an element
  */
 function findCaption(element) {
+    var _a, _b, _c, _d;
     // Check for existing figcaption
     const figcaption = element.querySelector('figcaption');
     if (figcaption) {
@@ -486,7 +488,7 @@ function findCaption(element) {
             continue;
         }
         // Check if this element has text content
-        const textContent = captionEl.textContent?.trim();
+        const textContent = (_a = captionEl.textContent) === null || _a === void 0 ? void 0 : _a.trim();
         if (textContent && textContent.length > 0) {
             // Check if we've already found this caption text
             if (!foundCaptions.has(textContent)) {
@@ -521,7 +523,7 @@ function findCaption(element) {
                 cls.includes('text') ||
                 cls.includes('description'));
             if (hasCaptionClass) {
-                const textContent = sibling.textContent?.trim();
+                const textContent = (_b = sibling.textContent) === null || _b === void 0 ? void 0 : _b.trim();
                 if (textContent && textContent.length > 0) {
                     return sibling;
                 }
@@ -541,7 +543,7 @@ function findCaption(element) {
         while (nextElement) {
             // Check if it's a text element (em, strong, span, etc.)
             if (['EM', 'STRONG', 'SPAN', 'I', 'B', 'SMALL', 'CITE'].includes(nextElement.tagName)) {
-                const textContent = nextElement.textContent?.trim();
+                const textContent = (_c = nextElement.textContent) === null || _c === void 0 ? void 0 : _c.trim();
                 if (textContent && textContent.length > 0) {
                     return nextElement;
                 }
@@ -563,7 +565,7 @@ function findCaption(element) {
             // Skip if this is the image itself
             if (textEl === img)
                 continue;
-            const textContent = textEl.textContent?.trim();
+            const textContent = (_d = textEl.textContent) === null || _d === void 0 ? void 0 : _d.trim();
             if (textContent && textContent.length > 0) {
                 return textEl;
             }
@@ -580,8 +582,9 @@ function extractUniqueCaptionContent(caption) {
     const processedTexts = new Set();
     // Helper function to process a node
     const processNode = (node) => {
+        var _a;
         if ((0, utils_1.isTextNode)(node)) {
-            const text = node.textContent?.trim() || '';
+            const text = ((_a = node.textContent) === null || _a === void 0 ? void 0 : _a.trim()) || '';
             if (text && !processedTexts.has(text)) {
                 textNodes.push(text);
                 processedTexts.add(text);
@@ -612,8 +615,9 @@ function extractUniqueCaptionContent(caption) {
  * Check if a caption is meaningful enough to warrant a figure element
  */
 function hasMeaningfulCaption(caption) {
+    var _a;
     // Get the text content
-    const textContent = caption.textContent?.trim() || '';
+    const textContent = ((_a = caption.textContent) === null || _a === void 0 ? void 0 : _a.trim()) || '';
     // If it's just a URL or very short, it's not meaningful
     if (textContent.length < 10 ||
         textContent.startsWith('http://') ||

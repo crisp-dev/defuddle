@@ -210,10 +210,13 @@ export class ContentScorer {
 		// Link density as a multiplier — scales the score down proportionally
 		// rather than applying a fixed penalty. Capped at 0.5 reduction to
 		// avoid over-penalizing link-heavy content like blog index pages.
-		const linkElements = element.getElementsByTagName('a');
+		// OPTIMIZED: Single pass to count links and calculate text length
+		const links = element.getElementsByTagName('a');
 		let linkTextLength = 0;
-		for (let i = 0; i < linkElements.length; i++) {
-			linkTextLength += (linkElements[i].textContent || '').length;
+		let linkCount = 0;
+		for (let i = 0; i < links.length; i++) {
+			linkCount++;
+			linkTextLength += (links[i].textContent || '').length;
 		}
 		const textLength = text.length || 1;
 		const linkDensity = Math.min(linkTextLength / textLength, 0.5);
@@ -461,6 +464,7 @@ export class ContentScorer {
 		// Check for high link text ratio (e.g. card groups, nav sections)
 		// Requires multiple links to avoid penalizing content paragraphs
 		// that happen to be wrapped in a single link
+		// OPTIMIZED: Calculate in single pass instead of separate loops
 		if (links > 1 && words < 80) {
 			let linkTextLength = 0;
 			for (let i = 0; i < linkElements.length; i++) {

@@ -3,11 +3,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.MetadataExtractor = void 0;
 class MetadataExtractor {
     static extract(doc, schemaOrgData, metaTags) {
+        var _a, _b;
         let domain = '';
         let url = '';
         try {
             // Try to get URL from document location
-            url = doc.location?.href || '';
+            url = ((_a = doc.location) === null || _a === void 0 ? void 0 : _a.href) || '';
             // If no URL from location, try other sources
             if (!url) {
                 url = this.getMetaContent(metaTags, "property", "og:url") ||
@@ -16,7 +17,7 @@ class MetadataExtractor {
                     this.getSchemaProperty(schemaOrgData, 'mainEntityOfPage.url') ||
                     this.getSchemaProperty(schemaOrgData, 'mainEntity.url') ||
                     this.getSchemaProperty(schemaOrgData, 'WebSite.url') ||
-                    doc.querySelector('link[rel="canonical"]')?.getAttribute('href') || '';
+                    ((_b = doc.querySelector('link[rel="canonical"]')) === null || _b === void 0 ? void 0 : _b.getAttribute('href')) || '';
             }
             if (url) {
                 try {
@@ -56,6 +57,7 @@ class MetadataExtractor {
         };
     }
     static getAuthor(doc, schemaOrgData, metaTags) {
+        var _a, _b;
         let authorsString;
         // Meta tags - typically expect a single string, possibly comma-separated
         authorsString = this.getMetaContent(metaTags, "name", "sailthru.author") ||
@@ -139,11 +141,11 @@ class MetadataExtractor {
             // Check siblings of h1 for date-adjacent author names
             let sibling = h1.nextElementSibling;
             for (let i = 0; i < 3 && sibling; i++) {
-                const siblingText = sibling.textContent?.trim() || '';
+                const siblingText = ((_a = sibling.textContent) === null || _a === void 0 ? void 0 : _a.trim()) || '';
                 if (this.parseDateText(siblingText)) {
                     const links = sibling.querySelectorAll('a');
                     for (const link of links) {
-                        const linkText = (link.textContent?.trim() || '').replace(/\u00a0/g, ' ');
+                        const linkText = (((_b = link.textContent) === null || _b === void 0 ? void 0 : _b.trim()) || '').replace(/\u00a0/g, ' ');
                         if (linkText.length > 0 && linkText.length < 100 && !this.parseDateText(linkText)) {
                             return linkText;
                         }
@@ -178,10 +180,11 @@ class MetadataExtractor {
         return this.getSiteName(schemaOrgData, metaTags);
     }
     static extractByline(el) {
+        var _a;
         // Check the element itself and its direct children for "By ..." text
         const candidates = [el, ...el.querySelectorAll('p, span, address')];
         for (const candidate of candidates) {
-            const text = (candidate.textContent?.trim() || '').replace(/\u00a0/g, ' ');
+            const text = (((_a = candidate.textContent) === null || _a === void 0 ? void 0 : _a.trim()) || '').replace(/\u00a0/g, ' ');
             if (text.length > 0 && text.length < 50) {
                 const bylineMatch = text.match(/^By\s+([A-Z].+)$/i);
                 if (bylineMatch) {
@@ -208,12 +211,13 @@ class MetadataExtractor {
             '');
     }
     static getTitle(doc, schemaOrgData, metaTags) {
+        var _a, _b;
         const rawTitle = (this.getMetaContent(metaTags, "property", "og:title") ||
             this.getMetaContent(metaTags, "name", "twitter:title") ||
             this.getSchemaProperty(schemaOrgData, 'headline') ||
             this.getMetaContent(metaTags, "name", "title") ||
             this.getMetaContent(metaTags, "name", "sailthru.title") ||
-            doc.querySelector('title')?.textContent?.trim() ||
+            ((_b = (_a = doc.querySelector('title')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim()) ||
             '');
         return this.cleanTitle(rawTitle, this.getSite(doc, schemaOrgData, metaTags));
     }
@@ -252,8 +256,9 @@ class MetadataExtractor {
             '');
     }
     static getLanguage(doc, schemaOrgData, metaTags) {
+        var _a, _b, _c, _d;
         // 1. <html lang="...">
-        const htmlLang = doc.documentElement?.getAttribute('lang')?.trim();
+        const htmlLang = (_b = (_a = doc.documentElement) === null || _a === void 0 ? void 0 : _a.getAttribute('lang')) === null || _b === void 0 ? void 0 : _b.trim();
         if (htmlLang)
             return this.normalizeLangCode(htmlLang);
         // 2. Content-Language meta tag
@@ -262,7 +267,7 @@ class MetadataExtractor {
         if (contentLang)
             return this.normalizeLangCode(contentLang);
         // 3. http-equiv Content-Language (stored as name in our meta tag collection)
-        const httpEquivLang = doc.querySelector('meta[http-equiv="Content-Language" i]')?.getAttribute('content')?.trim();
+        const httpEquivLang = (_d = (_c = doc.querySelector('meta[http-equiv="Content-Language" i]')) === null || _c === void 0 ? void 0 : _c.getAttribute('content')) === null || _d === void 0 ? void 0 : _d.trim();
         if (httpEquivLang)
             return this.normalizeLangCode(httpEquivLang);
         // 4. Schema.org
@@ -279,13 +284,14 @@ class MetadataExtractor {
         return code.replace(/_/g, '-');
     }
     static getFavicon(doc, baseUrl, metaTags) {
+        var _a, _b;
         const iconFromMeta = this.getMetaContent(metaTags, "property", "og:image:favicon");
         if (iconFromMeta)
             return iconFromMeta;
-        const iconLink = doc.querySelector("link[rel='icon']")?.getAttribute("href");
+        const iconLink = (_a = doc.querySelector("link[rel='icon']")) === null || _a === void 0 ? void 0 : _a.getAttribute("href");
         if (iconLink)
             return iconLink;
-        const shortcutLink = doc.querySelector("link[rel='shortcut icon']")?.getAttribute("href");
+        const shortcutLink = (_b = doc.querySelector("link[rel='shortcut icon']")) === null || _b === void 0 ? void 0 : _b.getAttribute("href");
         if (shortcutLink)
             return shortcutLink;
         // Only try to construct favicon URL if we have a valid HTTP base URL
@@ -300,10 +306,11 @@ class MetadataExtractor {
         return '';
     }
     static getPublished(doc, schemaOrgData, metaTags) {
+        var _a, _b, _c;
         const result = this.getSchemaProperty(schemaOrgData, 'datePublished') ||
             this.getMetaContent(metaTags, "name", "publishDate") ||
             this.getMetaContent(metaTags, "property", "article:published_time") ||
-            doc.querySelector('abbr[itemprop="datePublished"]')?.title?.trim() ||
+            ((_b = (_a = doc.querySelector('abbr[itemprop="datePublished"]')) === null || _a === void 0 ? void 0 : _a.title) === null || _b === void 0 ? void 0 : _b.trim()) ||
             this.getTimeElement(doc) ||
             this.getMetaContent(metaTags, "name", "sailthru.date");
         if (result)
@@ -313,7 +320,7 @@ class MetadataExtractor {
         if (h1) {
             let sibling = h1.nextElementSibling;
             for (let i = 0; i < 3 && sibling; i++) {
-                const parsed = this.parseDateText(sibling.textContent?.trim() || '');
+                const parsed = this.parseDateText(((_c = sibling.textContent) === null || _c === void 0 ? void 0 : _c.trim()) || '');
                 if (parsed)
                     return parsed;
                 sibling = sibling.nextElementSibling;
@@ -322,18 +329,20 @@ class MetadataExtractor {
         return '';
     }
     static getMetaContent(metaTags, attr, value) {
-        return this.getMetaContents(metaTags, attr, value)[0] ?? "";
+        var _a;
+        return (_a = this.getMetaContents(metaTags, attr, value)[0]) !== null && _a !== void 0 ? _a : "";
     }
     static getMetaContents(metaTags, attr, value) {
         return metaTags.filter(tag => {
             const attributeValue = attr === 'name' ? tag.name : tag.property;
-            return attributeValue?.toLowerCase() === value.toLowerCase();
-        }).map(tag => tag.content?.trim() ?? "");
+            return (attributeValue === null || attributeValue === void 0 ? void 0 : attributeValue.toLowerCase()) === value.toLowerCase();
+        }).map(tag => { var _a, _b; return (_b = (_a = tag.content) === null || _a === void 0 ? void 0 : _a.trim()) !== null && _b !== void 0 ? _b : ""; });
     }
     static getTimeElement(doc) {
+        var _a, _b, _c, _d;
         const selector = `time`;
         const element = Array.from(doc.querySelectorAll(selector))[0];
-        const content = element ? (element.getAttribute("datetime")?.trim() ?? element.textContent?.trim() ?? "") : "";
+        const content = element ? ((_d = (_b = (_a = element.getAttribute("datetime")) === null || _a === void 0 ? void 0 : _a.trim()) !== null && _b !== void 0 ? _b : (_c = element.textContent) === null || _c === void 0 ? void 0 : _c.trim()) !== null && _d !== void 0 ? _d : "") : "";
         return content;
     }
     static parseDateText(text) {

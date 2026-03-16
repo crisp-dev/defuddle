@@ -1,4 +1,13 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.XOembedExtractor = void 0;
 const _base_1 = require("./_base");
@@ -16,43 +25,47 @@ class XOembedExtractor extends _base_1.BaseExtractor {
     canExtractAsync() {
         return /\/(status|article)\/\d+/.test(this.url);
     }
-    async extractAsync() {
-        // Try FxTwitter first — it has full tweet text and media
-        const fxResult = await this.tryExtractFxTwitter();
-        if (fxResult) {
-            return fxResult;
-        }
-        // Fall back to oEmbed (truncates long tweets but always available)
-        return this.extractOembed();
+    extractAsync() {
+        return __awaiter(this, void 0, void 0, function* () {
+            // Try FxTwitter first — it has full tweet text and media
+            const fxResult = yield this.tryExtractFxTwitter();
+            if (fxResult) {
+                return fxResult;
+            }
+            // Fall back to oEmbed (truncates long tweets but always available)
+            return this.extractOembed();
+        });
     }
-    async extractOembed() {
-        const oembedUrl = `https://publish.twitter.com/oembed?url=${encodeURIComponent(this.url)}&omit_script=true`;
-        const response = await fetch(oembedUrl);
-        if (!response.ok) {
-            throw new Error(`oEmbed request failed: ${response.status}`);
-        }
-        const data = await response.json();
-        // Parse the oEmbed HTML to extract tweet text
-        const div = this.document.createElement('div');
-        div.appendChild((0, dom_1.parseHTML)(this.document, data.html));
-        // The oEmbed HTML contains a <blockquote> with <p> tags for text
-        // and an <a> tag for the date
-        const blockquote = div.querySelector('blockquote');
-        const paragraphs = blockquote?.querySelectorAll('p') || [];
-        const tweetText = Array.from(paragraphs)
-            .map(p => `<p>${(0, dom_1.serializeHTML)(p)}</p>`)
-            .join('\n');
-        const handle = data.author_url
-            ? `@${data.author_url.split('/').pop()}`
-            : '';
-        const dateLink = blockquote?.querySelector('a:last-child');
-        const dateText = dateLink?.textContent?.trim() || '';
-        const permalink = dateLink?.getAttribute('href') || this.url;
-        const escapedAuthorName = (0, dom_1.escapeHtml)(data.author_name);
-        const escapedHandle = (0, dom_1.escapeHtml)(handle);
-        const escapedDateText = (0, dom_1.escapeHtml)(dateText);
-        const escapedPermalink = (0, dom_1.escapeHtml)(permalink);
-        const contentHtml = `
+    extractOembed() {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            const oembedUrl = `https://publish.twitter.com/oembed?url=${encodeURIComponent(this.url)}&omit_script=true`;
+            const response = yield fetch(oembedUrl);
+            if (!response.ok) {
+                throw new Error(`oEmbed request failed: ${response.status}`);
+            }
+            const data = yield response.json();
+            // Parse the oEmbed HTML to extract tweet text
+            const div = this.document.createElement('div');
+            div.appendChild((0, dom_1.parseHTML)(this.document, data.html));
+            // The oEmbed HTML contains a <blockquote> with <p> tags for text
+            // and an <a> tag for the date
+            const blockquote = div.querySelector('blockquote');
+            const paragraphs = (blockquote === null || blockquote === void 0 ? void 0 : blockquote.querySelectorAll('p')) || [];
+            const tweetText = Array.from(paragraphs)
+                .map(p => `<p>${(0, dom_1.serializeHTML)(p)}</p>`)
+                .join('\n');
+            const handle = data.author_url
+                ? `@${data.author_url.split('/').pop()}`
+                : '';
+            const dateLink = blockquote === null || blockquote === void 0 ? void 0 : blockquote.querySelector('a:last-child');
+            const dateText = ((_a = dateLink === null || dateLink === void 0 ? void 0 : dateLink.textContent) === null || _a === void 0 ? void 0 : _a.trim()) || '';
+            const permalink = (dateLink === null || dateLink === void 0 ? void 0 : dateLink.getAttribute('href')) || this.url;
+            const escapedAuthorName = (0, dom_1.escapeHtml)(data.author_name);
+            const escapedHandle = (0, dom_1.escapeHtml)(handle);
+            const escapedDateText = (0, dom_1.escapeHtml)(dateText);
+            const escapedPermalink = (0, dom_1.escapeHtml)(permalink);
+            const contentHtml = `
 			<div class="tweet-thread">
 				<div class="main-tweet">
 					<div class="tweet">
@@ -65,47 +78,53 @@ class XOembedExtractor extends _base_1.BaseExtractor {
 				</div>
 			</div>
 		`.trim();
-        return {
-            content: contentHtml,
-            contentHtml: contentHtml,
-            variables: {
-                title: `Post by ${handle || data.author_name}`,
-                author: handle || data.author_name,
-                site: 'X (Twitter)',
-            }
-        };
-    }
-    async tryExtractFxTwitter() {
-        const match = this.url.match(/\/([a-zA-Z][a-zA-Z0-9_]{0,14})\/(status|article)\/(\d+)/);
-        if (!match)
-            return null;
-        try {
-            const data = await this.fetchFxTwitter(match[1], match[3]);
-            // If it's an article, use the rich article renderer
-            if (data.tweet?.article) {
-                return this.buildArticleResult(data);
-            }
-            // Otherwise use the full tweet text from FxTwitter
-            if (data.tweet?.text) {
-                return this.buildTweetResult(data);
-            }
-            return null;
-        }
-        catch {
-            return null;
-        }
-    }
-    async fetchFxTwitter(username, id) {
-        const apiUrl = `https://api.fxtwitter.com/${username}/status/${id}`;
-        const response = await fetch(apiUrl, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (compatible; Defuddle/1.0; +https://defuddle.md)',
-            },
+            return {
+                content: contentHtml,
+                contentHtml: contentHtml,
+                variables: {
+                    title: `Post by ${handle || data.author_name}`,
+                    author: handle || data.author_name,
+                    site: 'X (Twitter)',
+                }
+            };
         });
-        if (!response.ok) {
-            throw new Error(`FxTwitter API request failed: ${response.status}`);
-        }
-        return response.json();
+    }
+    tryExtractFxTwitter() {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a, _b;
+            const match = this.url.match(/\/([a-zA-Z][a-zA-Z0-9_]{0,14})\/(status|article)\/(\d+)/);
+            if (!match)
+                return null;
+            try {
+                const data = yield this.fetchFxTwitter(match[1], match[3]);
+                // If it's an article, use the rich article renderer
+                if ((_a = data.tweet) === null || _a === void 0 ? void 0 : _a.article) {
+                    return this.buildArticleResult(data);
+                }
+                // Otherwise use the full tweet text from FxTwitter
+                if ((_b = data.tweet) === null || _b === void 0 ? void 0 : _b.text) {
+                    return this.buildTweetResult(data);
+                }
+                return null;
+            }
+            catch (_c) {
+                return null;
+            }
+        });
+    }
+    fetchFxTwitter(username, id) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const apiUrl = `https://api.fxtwitter.com/${username}/status/${id}`;
+            const response = yield fetch(apiUrl, {
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (compatible; Defuddle/1.0; +https://defuddle.md)',
+                },
+            });
+            if (!response.ok) {
+                throw new Error(`FxTwitter API request failed: ${response.status}`);
+            }
+            return response.json();
+        });
     }
     buildArticleResult(data) {
         const article = data.tweet.article;
@@ -138,10 +157,11 @@ class XOembedExtractor extends _base_1.BaseExtractor {
         };
     }
     renderTweet(tweet) {
-        const text = tweet.raw_text?.text || tweet.text;
+        var _a, _b, _c;
+        const text = ((_a = tweet.raw_text) === null || _a === void 0 ? void 0 : _a.text) || tweet.text;
         // Filter out media facets — FxTwitter already strips pic.twitter.com
         // links from the text, so media facet indices are stale
-        const facets = (tweet.raw_text?.facets || []).filter(f => f.type !== 'media');
+        const facets = (((_b = tweet.raw_text) === null || _b === void 0 ? void 0 : _b.facets) || []).filter(f => f.type !== 'media');
         // Split text into paragraphs on double newlines
         const paragraphs = text.split(/\n\n+/);
         let offset = 0;
@@ -168,7 +188,7 @@ class XOembedExtractor extends _base_1.BaseExtractor {
             }
         }
         // Append media images
-        if (tweet.media?.photos) {
+        if ((_c = tweet.media) === null || _c === void 0 ? void 0 : _c.photos) {
             for (const photo of tweet.media.photos) {
                 htmlParts.push(`<img src="${(0, dom_1.escapeHtml)(photo.url)}" alt="">`);
             }
@@ -233,9 +253,10 @@ class XOembedExtractor extends _base_1.BaseExtractor {
         return this.applyMarkers(text, markers);
     }
     renderArticle(blocks, entityMap, coverMedia) {
+        var _a;
         const parts = [];
         // Add cover image if available
-        if (coverMedia?.media_info?.original_img_url) {
+        if ((_a = coverMedia === null || coverMedia === void 0 ? void 0 : coverMedia.media_info) === null || _a === void 0 ? void 0 : _a.original_img_url) {
             parts.push(`<img src="${(0, dom_1.escapeHtml)(coverMedia.media_info.original_img_url)}" alt="Cover image">`);
         }
         let i = 0;
@@ -311,6 +332,7 @@ class XOembedExtractor extends _base_1.BaseExtractor {
         }
     }
     renderInlineContent(block, entityMap) {
+        var _a, _b;
         const text = block.text;
         if (!text)
             return '';
@@ -323,20 +345,20 @@ class XOembedExtractor extends _base_1.BaseExtractor {
         }
         for (const range of block.entityRanges) {
             const entityEntry = entityMap.find(e => e.key === String(range.key));
-            if (entityEntry?.value.type === 'LINK' && entityEntry.value.data.url) {
+            if ((entityEntry === null || entityEntry === void 0 ? void 0 : entityEntry.value.type) === 'LINK' && entityEntry.value.data.url) {
                 const url = (0, dom_1.escapeHtml)(entityEntry.value.data.url);
                 markers.push({ offset: range.offset, type: 'open', tag: `<a href="${url}">` });
                 markers.push({ offset: range.offset + range.length, type: 'close', tag: '</a>' });
             }
         }
-        if (block.data?.mentions) {
+        if ((_a = block.data) === null || _a === void 0 ? void 0 : _a.mentions) {
             for (const mention of block.data.mentions) {
                 const url = `https://x.com/${(0, dom_1.escapeHtml)(mention.text)}`;
                 markers.push({ offset: mention.fromIndex, type: 'open', tag: `<a href="${url}">` });
                 markers.push({ offset: mention.toIndex, type: 'close', tag: '</a>' });
             }
         }
-        if (block.data?.urls) {
+        if ((_b = block.data) === null || _b === void 0 ? void 0 : _b.urls) {
             for (const urlData of block.data.urls) {
                 const url = (0, dom_1.escapeHtml)(urlData.text);
                 markers.push({ offset: urlData.fromIndex, type: 'open', tag: `<a href="${url}">` });

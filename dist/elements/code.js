@@ -143,6 +143,7 @@ exports.codeBlockRules = [
             if (!hasHTMLElementProps(el))
                 return el;
             const getCodeLanguage = (element) => {
+                var _a;
                 // Check data-lang attribute first
                 const dataLang = element.getAttribute('data-lang') || element.getAttribute('data-language') || element.getAttribute('language');
                 if (dataLang) {
@@ -151,7 +152,7 @@ exports.codeBlockRules = [
                 // Check class names for patterns and supported languages
                 const classNames = Array.from(element.classList || []);
                 // Check for syntax highlighter specific format
-                if (element.classList?.contains('syntaxhighlighter')) {
+                if ((_a = element.classList) === null || _a === void 0 ? void 0 : _a.contains('syntaxhighlighter')) {
                     const langClass = classNames.find(c => !['syntaxhighlighter', 'nogutter'].includes(c));
                     if (langClass && CODE_LANGUAGES.has(langClass.toLowerCase())) {
                         return langClass.toLowerCase();
@@ -195,8 +196,9 @@ exports.codeBlockRules = [
                         .map(line => {
                         const codeParts = Array.from(line.querySelectorAll('code'))
                             .map(code => {
+                            var _a;
                             let text = code.textContent || '';
-                            if (code.classList?.contains('spaces')) {
+                            if ((_a = code.classList) === null || _a === void 0 ? void 0 : _a.contains('spaces')) {
                                 text = ' '.repeat(text.length);
                             }
                             return text;
@@ -222,11 +224,12 @@ exports.codeBlockRules = [
             };
             // Recursively extract text content while preserving structure
             const extractStructuredText = (element) => {
+                var _a;
                 if ((0, utils_1.isTextNode)(element)) {
                     // Skip whitespace-only text nodes between line spans
                     // (e.g. rehype-pretty-code / Shiki), since line handling
                     // already appends a newline per line.
-                    if (element.parentElement?.querySelector('[data-line], .line') &&
+                    if (((_a = element.parentElement) === null || _a === void 0 ? void 0 : _a.querySelector('[data-line], .line')) &&
                         !(element.textContent || '').trim()) {
                         return '';
                     }

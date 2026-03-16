@@ -8,6 +8,7 @@ exports.headingRules = [
         selector: 'h1, h2, h3, h4, h5, h6',
         element: 'keep',
         transform: (el) => {
+            var _a;
             // Get document from element's owner document
             const doc = el.ownerDocument;
             if (!doc) {
@@ -28,16 +29,17 @@ exports.headingRules = [
             const navigationText = new Map();
             // Find all navigation elements and store their text content
             Array.from(clone.querySelectorAll('*')).forEach(child => {
+                var _a, _b, _c, _d, _e, _f;
                 let shouldRemove = false;
                 if (child.tagName.toLowerCase() === 'a') {
                     const href = child.getAttribute('href');
-                    if (href?.includes('#') || href?.startsWith('#')) {
-                        navigationText.set(child, child.textContent?.trim() || '');
+                    if ((href === null || href === void 0 ? void 0 : href.includes('#')) || (href === null || href === void 0 ? void 0 : href.startsWith('#'))) {
+                        navigationText.set(child, ((_a = child.textContent) === null || _a === void 0 ? void 0 : _a.trim()) || '');
                         shouldRemove = true;
                     }
                 }
                 if (child.classList.contains('anchor')) {
-                    navigationText.set(child, child.textContent?.trim() || '');
+                    navigationText.set(child, ((_b = child.textContent) === null || _b === void 0 ? void 0 : _b.trim()) || '');
                     shouldRemove = true;
                 }
                 if (child.tagName.toLowerCase() === 'button') {
@@ -47,7 +49,7 @@ exports.headingRules = [
                     child.querySelector('a[href^="#"]')) {
                     const anchor = child.querySelector('a[href^="#"]');
                     if (anchor) {
-                        navigationText.set(child, anchor.textContent?.trim() || '');
+                        navigationText.set(child, ((_c = anchor.textContent) === null || _c === void 0 ? void 0 : _c.trim()) || '');
                     }
                     shouldRemove = true;
                 }
@@ -56,8 +58,8 @@ exports.headingRules = [
                     // store its text to be used for the parent
                     const parent = child.parentElement;
                     if (parent && parent !== clone &&
-                        parent.textContent?.trim() === child.textContent?.trim()) {
-                        navigationText.set(parent, child.textContent?.trim() || '');
+                        ((_d = parent.textContent) === null || _d === void 0 ? void 0 : _d.trim()) === ((_e = child.textContent) === null || _e === void 0 ? void 0 : _e.trim())) {
+                        navigationText.set(parent, ((_f = child.textContent) === null || _f === void 0 ? void 0 : _f.trim()) || '');
                     }
                 }
             });
@@ -65,7 +67,7 @@ exports.headingRules = [
             const toRemove = Array.from(clone.querySelectorAll('*')).filter(child => {
                 if (child.tagName.toLowerCase() === 'a') {
                     const href = child.getAttribute('href');
-                    return href?.includes('#') || href?.startsWith('#');
+                    return (href === null || href === void 0 ? void 0 : href.includes('#')) || (href === null || href === void 0 ? void 0 : href.startsWith('#'));
                 }
                 if (child.classList.contains('anchor')) {
                     return true;
@@ -81,7 +83,7 @@ exports.headingRules = [
             });
             toRemove.forEach(element => element.remove());
             // Get the text content after removing navigation elements
-            let textContent = clone.textContent?.trim() || '';
+            let textContent = ((_a = clone.textContent) === null || _a === void 0 ? void 0 : _a.trim()) || '';
             // If we lost all text content but had navigation text, use that instead
             if (!textContent && navigationText.size > 0) {
                 textContent = Array.from(navigationText.values())[0];

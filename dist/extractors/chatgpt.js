@@ -23,11 +23,11 @@ class ChatGPTExtractor extends _conversation_1.ConversationExtractor {
         if (!this.articles)
             return messages;
         this.articles.forEach((article) => {
+            var _a, _b;
             // Get the localized author text from the sr-only heading and clean it
             const authorElement = article.querySelector('h5.sr-only, h6.sr-only');
-            const authorText = authorElement?.textContent
-                ?.trim()
-                ?.replace(/:\s*$/, '') // Remove colon and any trailing whitespace
+            const authorText = ((_b = (_a = authorElement === null || authorElement === void 0 ? void 0 : authorElement.textContent) === null || _a === void 0 ? void 0 : _a.trim()) === null || _b === void 0 ? void 0 : _b.replace(/:\s*$/, '') // Remove colon and any trailing whitespace
+            )
                 || '';
             let currentAuthorRole = '';
             const authorRole = article.getAttribute('data-message-author-role');
@@ -119,13 +119,14 @@ class ChatGPTExtractor extends _conversation_1.ConversationExtractor {
         };
     }
     getTitle() {
+        var _a, _b, _c;
         // Try to get the page title first
-        const pageTitle = this.document.title?.trim();
+        const pageTitle = (_a = this.document.title) === null || _a === void 0 ? void 0 : _a.trim();
         if (pageTitle && pageTitle !== 'ChatGPT') {
             return pageTitle;
         }
         // Fall back to first user message
-        const firstUserTurn = this.articles?.item(0)?.querySelector('.text-message');
+        const firstUserTurn = (_c = (_b = this.articles) === null || _b === void 0 ? void 0 : _b.item(0)) === null || _c === void 0 ? void 0 : _c.querySelector('.text-message');
         if (firstUserTurn) {
             const text = firstUserTurn.textContent || '';
             // Truncate to first 50 characters if longer

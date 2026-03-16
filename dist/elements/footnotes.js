@@ -114,11 +114,12 @@ class FootnoteHandler {
             // Common format using OL/UL and LI elements
             const items = list.querySelectorAll('li, div[role="listitem"]');
             items.forEach((li) => {
+                var _a, _b, _c, _d;
                 let id = '';
                 let content = null;
                 // Handle citations with .citations class
                 const citationsDiv = li.querySelector('.citations');
-                if (citationsDiv?.id?.toLowerCase().startsWith('r')) {
+                if ((_a = citationsDiv === null || citationsDiv === void 0 ? void 0 : citationsDiv.id) === null || _a === void 0 ? void 0 : _a.toLowerCase().startsWith('r')) {
                     id = citationsDiv.id.toLowerCase();
                     // Look for citation content within the citations div
                     const citationContent = citationsDiv.querySelector('.citation-content');
@@ -139,10 +140,10 @@ class FootnoteHandler {
                         // Nature.com
                     }
                     else if (li.hasAttribute('data-counter')) {
-                        id = li.getAttribute('data-counter')?.replace(/\.$/, '')?.toLowerCase() || '';
+                        id = ((_c = (_b = li.getAttribute('data-counter')) === null || _b === void 0 ? void 0 : _b.replace(/\.$/, '')) === null || _c === void 0 ? void 0 : _c.toLowerCase()) || '';
                     }
                     else {
-                        const match = li.id.split('/').pop()?.match(/cite_note-(.+)/);
+                        const match = (_d = li.id.split('/').pop()) === null || _d === void 0 ? void 0 : _d.match(/cite_note-(.+)/);
                         id = match ? match[1].toLowerCase() : li.id.toLowerCase();
                     }
                     content = li;
@@ -164,11 +165,12 @@ class FootnoteHandler {
             const candidateRefs = new Map(); // fragment -> [anchor elements]
             const allAnchors = element.querySelectorAll('a[href*="#"]');
             allAnchors.forEach((a) => {
+                var _a, _b;
                 const href = a.getAttribute('href') || '';
-                const fragment = href.split('#').pop()?.toLowerCase();
+                const fragment = (_a = href.split('#').pop()) === null || _a === void 0 ? void 0 : _a.toLowerCase();
                 if (!fragment)
                     return;
-                const text = a.textContent?.trim() || '';
+                const text = ((_b = a.textContent) === null || _b === void 0 ? void 0 : _b.trim()) || '';
                 if (!/^\[?\(?\d{1,4}\)?\]?$/.test(text))
                     return;
                 // Must be inside a sup or span to look like a footnote ref
@@ -252,8 +254,9 @@ class FootnoteHandler {
     }
     removeBackrefs(el) {
         el.querySelectorAll('a').forEach((a) => {
-            const text = a.textContent?.trim().replace(/\uFE0E|\uFE0F/g, '') || '';
-            if (/^[\u21A9\u21A5\u2191\u21B5\u2934\u2935\u23CE]+$/.test(text) || a.classList?.contains('footnote-backref')) {
+            var _a, _b;
+            const text = ((_a = a.textContent) === null || _a === void 0 ? void 0 : _a.trim().replace(/\uFE0E|\uFE0F/g, '')) || '';
+            if (/^[\u21A9\u21A5\u2191\u21B5\u2934\u2935\u23CE]+$/.test(text) || ((_b = a.classList) === null || _b === void 0 ? void 0 : _b.contains('footnote-backref'))) {
                 a.remove();
             }
         });
@@ -332,6 +335,7 @@ class FootnoteHandler {
         // Group references by their parent sup element
         const supGroups = new Map();
         footnoteInlineReferences.forEach((el) => {
+            var _a, _b, _c, _d;
             if (!el || !el.parentNode)
                 return;
             let footnoteId = '';
@@ -350,7 +354,7 @@ class FootnoteHandler {
                 // Nature.com
             }
             else if (el.matches('a[id^="ref-link"]')) {
-                footnoteId = el.textContent?.trim() || '';
+                footnoteId = ((_a = el.textContent) === null || _a === void 0 ? void 0 : _a.trim()) || '';
                 // Science.org
             }
             else if (el.matches('a[role="doc-biblioref"]')) {
@@ -360,14 +364,14 @@ class FootnoteHandler {
                 }
                 else {
                     const href = el.getAttribute('href');
-                    if (href?.startsWith('#core-R')) {
+                    if (href === null || href === void 0 ? void 0 : href.startsWith('#core-R')) {
                         footnoteId = href.replace('#core-', '');
                     }
                 }
                 // Substack
             }
             else if (el.matches('a.footnote-anchor, span.footnote-hovercard-target a')) {
-                const id = el.id?.replace('footnote-anchor-', '') || '';
+                const id = ((_b = el.id) === null || _b === void 0 ? void 0 : _b.replace('footnote-anchor-', '')) || '';
                 if (id) {
                     footnoteId = id.toLowerCase();
                 }
@@ -379,10 +383,11 @@ class FootnoteHandler {
                     // Process all links in the citation group
                     const refs = [];
                     links.forEach((link) => {
+                        var _a;
                         const href = link.getAttribute('href');
                         if (!href)
                             return;
-                        const match = href.split('/').pop()?.match(/bib\.bib(\d+)/);
+                        const match = (_a = href.split('/').pop()) === null || _a === void 0 ? void 0 : _a.match(/bib\.bib(\d+)/);
                         if (!match)
                             return;
                         const citationId = match[1].toLowerCase();
@@ -414,9 +419,10 @@ class FootnoteHandler {
             else if (el.matches('sup.reference')) {
                 const links = el.querySelectorAll('a');
                 Array.from(links).forEach((link) => {
+                    var _a;
                     const href = link.getAttribute('href');
                     if (href) {
-                        const match = href.split('/').pop()?.match(/(?:cite_note|cite_ref)-(.+)/);
+                        const match = (_a = href.split('/').pop()) === null || _a === void 0 ? void 0 : _a.match(/(?:cite_note|cite_ref)-(.+)/);
                         if (match) {
                             footnoteId = match[1].toLowerCase();
                         }
@@ -432,7 +438,7 @@ class FootnoteHandler {
             else if (el.matches('span.footnote-reference')) {
                 footnoteId = el.getAttribute('data-footnote-id') || '';
                 // LessWrong uses id="fnrefXXX" on the span
-                if (!footnoteId && el.id?.startsWith('fnref')) {
+                if (!footnoteId && ((_c = el.id) === null || _c === void 0 ? void 0 : _c.startsWith('fnref'))) {
                     footnoteId = el.id.replace('fnref', '').toLowerCase();
                 }
             }
@@ -441,7 +447,7 @@ class FootnoteHandler {
                 footnoteContent = el.getAttribute('data-footnote-content') || '';
             }
             else if (el.matches('a.citation')) {
-                footnoteId = el.textContent?.trim() || '';
+                footnoteId = ((_d = el.textContent) === null || _d === void 0 ? void 0 : _d.trim()) || '';
                 footnoteContent = el.getAttribute('href') || '';
             }
             else if (el.matches('a[id^="fnref"]')) {
@@ -495,6 +501,7 @@ class FootnoteHandler {
             // Pass 1: Match by fragment link (e.g. <a href="#mn37note01">1</a>)
             const allLinks = element.querySelectorAll('a[href*="#"]');
             allLinks.forEach((link) => {
+                var _a, _b;
                 if (!link.parentNode)
                     return;
                 // Skip if already inside a standardized footnote ref
@@ -509,14 +516,14 @@ class FootnoteHandler {
                 if (this.genericContainer && this.genericContainer.contains(link))
                     return;
                 const href = link.getAttribute('href') || '';
-                const fragment = href.split('#').pop()?.toLowerCase();
+                const fragment = (_a = href.split('#').pop()) === null || _a === void 0 ? void 0 : _a.toLowerCase();
                 if (!fragment)
                     return;
                 const entry = footnoteIdMap.get(fragment);
                 if (!entry)
                     return;
                 // Validate it looks like a footnote marker
-                const text = link.textContent?.trim() || '';
+                const text = ((_b = link.textContent) === null || _b === void 0 ? void 0 : _b.trim()) || '';
                 if (!/^[\[\(]?\d{1,4}[\]\)]?$/.test(text))
                     return;
                 const [footnoteNumber, footnoteData] = entry;
@@ -532,15 +539,16 @@ class FootnoteHandler {
             if (stillUnmatched.length > 0) {
                 const supElements = element.querySelectorAll('sup, span.footnote-ref');
                 supElements.forEach((el) => {
+                    var _a, _b;
                     if (!el.parentNode)
                         return;
                     // Skip if already standardized
-                    if (el.id?.startsWith('fnref:'))
+                    if ((_a = el.id) === null || _a === void 0 ? void 0 : _a.startsWith('fnref:'))
                         return;
                     // Skip if inside the footnotes section
                     if (el.closest('#footnotes'))
                         return;
-                    const text = el.textContent?.trim() || '';
+                    const text = ((_b = el.textContent) === null || _b === void 0 ? void 0 : _b.trim()) || '';
                     const match = text.match(/^[\[\(]?(\d{1,4})[\]\)]?$/);
                     if (!match)
                         return;
@@ -582,7 +590,7 @@ class FootnoteHandler {
         newList.id = 'footnotes';
         const orderedList = this.doc.createElement('ol');
         // Merge sidenotes and regular footnotes
-        const allFootnotes = { ...sidenotes, ...footnotes };
+        const allFootnotes = Object.assign(Object.assign({}, sidenotes), footnotes);
         // Create footnote items in order
         Object.entries(allFootnotes).forEach(([number, data]) => {
             const newItem = this.createFootnoteItem(parseInt(number), data.content, data.refs);

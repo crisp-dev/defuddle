@@ -1,4 +1,13 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.YoutubeExtractor = void 0;
 const _base_1 = require("./_base");
@@ -40,9 +49,11 @@ class YoutubeExtractor extends _base_1.BaseExtractor {
     extract() {
         return this.buildResult();
     }
-    async extractAsync() {
-        const transcript = await this.fetchTranscript();
-        return this.buildResult(transcript);
+    extractAsync() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const transcript = yield this.fetchTranscript();
+            return this.buildResult(transcript);
+        });
     }
     buildResult(transcript) {
         const videoData = this.getVideoData();
@@ -50,7 +61,7 @@ class YoutubeExtractor extends _base_1.BaseExtractor {
         const description = videoData.description || '';
         const formattedDescription = this.formatDescription(description);
         let contentHtml = `<iframe width="560" height="315" src="https://www.youtube.com/embed/${this.getVideoId()}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>${formattedDescription}`;
-        if (transcript?.html) {
+        if (transcript === null || transcript === void 0 ? void 0 : transcript.html) {
             contentHtml += transcript.html;
         }
         const variables = {
@@ -61,10 +72,10 @@ class YoutubeExtractor extends _base_1.BaseExtractor {
             published: videoData.uploadDate,
             description: description.slice(0, 200).trim(),
         };
-        if (transcript?.text) {
+        if (transcript === null || transcript === void 0 ? void 0 : transcript.text) {
             variables.transcript = transcript.text;
         }
-        if (transcript?.languageCode) {
+        if (transcript === null || transcript === void 0 ? void 0 : transcript.languageCode) {
             variables.language = transcript.languageCode;
         }
         return {
@@ -97,16 +108,17 @@ class YoutubeExtractor extends _base_1.BaseExtractor {
         if (fromPlayer) {
             return fromPlayer;
         }
-        return videoData?.author || '';
+        return (videoData === null || videoData === void 0 ? void 0 : videoData.author) || '';
     }
     getChannelNameFromDom() {
+        var _a;
         const ownerSelectors = [
             'ytd-video-owner-renderer #channel-name a[href^="/@"]',
             '#owner-name a[href^="/@"]'
         ];
         for (const selector of ownerSelectors) {
             const element = this.document.querySelector(selector);
-            const value = element?.textContent?.trim();
+            const value = (_a = element === null || element === void 0 ? void 0 : element.textContent) === null || _a === void 0 ? void 0 : _a.trim();
             if (value) {
                 return value;
             }
@@ -114,29 +126,31 @@ class YoutubeExtractor extends _base_1.BaseExtractor {
         return this.getChannelNameFromMicrodata();
     }
     getChannelNameFromMicrodata() {
+        var _a;
         const authorRoot = this.document.querySelector('[itemprop="author"]');
         if (!authorRoot)
             return '';
         const metaName = authorRoot.querySelector('meta[itemprop="name"]');
-        if (metaName?.getAttribute('content')) {
+        if (metaName === null || metaName === void 0 ? void 0 : metaName.getAttribute('content')) {
             return metaName.getAttribute('content').trim();
         }
         const linkName = authorRoot.querySelector('link[itemprop="name"]');
-        if (linkName?.getAttribute('content')) {
+        if (linkName === null || linkName === void 0 ? void 0 : linkName.getAttribute('content')) {
             return linkName.getAttribute('content').trim();
         }
         const text = authorRoot.querySelector('[itemprop="name"], a, span');
-        return text?.textContent?.trim() || '';
+        return ((_a = text === null || text === void 0 ? void 0 : text.textContent) === null || _a === void 0 ? void 0 : _a.trim()) || '';
     }
     getChannelNameFromPlayerResponse() {
+        var _a, _b, _c, _d;
         const data = this.parseInlineJson('ytInitialPlayerResponse');
         if (!data)
             return '';
-        const fromVideoDetails = data?.videoDetails?.author || data?.videoDetails?.ownerChannelName;
+        const fromVideoDetails = ((_a = data === null || data === void 0 ? void 0 : data.videoDetails) === null || _a === void 0 ? void 0 : _a.author) || ((_b = data === null || data === void 0 ? void 0 : data.videoDetails) === null || _b === void 0 ? void 0 : _b.ownerChannelName);
         if (fromVideoDetails) {
             return fromVideoDetails;
         }
-        const fromMicroformat = data?.microformat?.playerMicroformatRenderer?.ownerChannelName;
+        const fromMicroformat = (_d = (_c = data === null || data === void 0 ? void 0 : data.microformat) === null || _c === void 0 ? void 0 : _c.playerMicroformatRenderer) === null || _d === void 0 ? void 0 : _d.ownerChannelName;
         return fromMicroformat || '';
     }
     parseInlineJson(globalName) {
@@ -171,113 +185,118 @@ class YoutubeExtractor extends _base_1.BaseExtractor {
         }
         return null;
     }
-    async fetchTranscript() {
-        try {
-            const videoId = this.getVideoId();
-            if (!videoId)
-                return undefined;
-            // Fetch captions and chapters in parallel
-            const [playerData, chapters] = await Promise.all([
-                this.fetchPlayerData(videoId),
-                this.fetchChapters(videoId),
-            ]);
-            if (!playerData)
-                return undefined;
-            const captionTracks = playerData?.captions
-                ?.playerCaptionsTracklistRenderer?.captionTracks;
-            if (!Array.isArray(captionTracks) || captionTracks.length === 0)
-                return undefined;
-            // Prefer English, fall back to first available track
-            const track = captionTracks.find((t) => t.languageCode === 'en')
-                || captionTracks[0];
-            if (!track?.baseUrl)
-                return undefined;
-            // Validate URL to prevent SSRF in server-side contexts
+    fetchTranscript() {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a, _b;
             try {
-                const captionUrl = new URL(track.baseUrl);
-                if (!captionUrl.hostname.endsWith('.youtube.com'))
+                const videoId = this.getVideoId();
+                if (!videoId)
                     return undefined;
+                // Fetch captions and chapters in parallel
+                const [playerData, chapters] = yield Promise.all([
+                    this.fetchPlayerData(videoId),
+                    this.fetchChapters(videoId),
+                ]);
+                if (!playerData)
+                    return undefined;
+                const captionTracks = (_b = (_a = playerData === null || playerData === void 0 ? void 0 : playerData.captions) === null || _a === void 0 ? void 0 : _a.playerCaptionsTracklistRenderer) === null || _b === void 0 ? void 0 : _b.captionTracks;
+                if (!Array.isArray(captionTracks) || captionTracks.length === 0)
+                    return undefined;
+                // Prefer English, fall back to first available track
+                const track = captionTracks.find((t) => t.languageCode === 'en')
+                    || captionTracks[0];
+                if (!(track === null || track === void 0 ? void 0 : track.baseUrl))
+                    return undefined;
+                // Validate URL to prevent SSRF in server-side contexts
+                try {
+                    const captionUrl = new URL(track.baseUrl);
+                    if (!captionUrl.hostname.endsWith('.youtube.com'))
+                        return undefined;
+                }
+                catch (_c) {
+                    return undefined;
+                }
+                const response = yield fetch(track.baseUrl, {
+                    headers: { 'User-Agent': 'Mozilla/5.0' },
+                });
+                if (!response.ok)
+                    return undefined;
+                const xml = yield response.text();
+                if (!xml)
+                    return undefined;
+                return this.parseTranscriptXml(xml, track.languageCode || 'en', chapters);
             }
-            catch {
+            catch (error) {
+                console.error('YoutubeExtractor: failed to fetch transcript', error);
                 return undefined;
             }
-            const response = await fetch(track.baseUrl, {
-                headers: { 'User-Agent': 'Mozilla/5.0' },
-            });
-            if (!response.ok)
-                return undefined;
-            const xml = await response.text();
-            if (!xml)
-                return undefined;
-            return this.parseTranscriptXml(xml, track.languageCode || 'en', chapters);
-        }
-        catch (error) {
-            console.error('YoutubeExtractor: failed to fetch transcript', error);
-            return undefined;
-        }
+        });
     }
-    async fetchPlayerData(videoId) {
-        try {
-            const resp = await fetch(INNERTUBE_API_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'User-Agent': INNERTUBE_USER_AGENT,
-                },
-                body: JSON.stringify({
-                    context: INNERTUBE_CONTEXT,
-                    videoId,
-                })
-            });
-            if (!resp.ok)
+    fetchPlayerData(videoId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const resp = yield fetch(INNERTUBE_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'User-Agent': INNERTUBE_USER_AGENT,
+                    },
+                    body: JSON.stringify({
+                        context: INNERTUBE_CONTEXT,
+                        videoId,
+                    })
+                });
+                if (!resp.ok)
+                    return undefined;
+                return resp.json();
+            }
+            catch (_a) {
                 return undefined;
-            return resp.json();
-        }
-        catch {
-            return undefined;
-        }
+            }
+        });
     }
-    async fetchChapters(videoId) {
-        try {
-            const resp = await fetch(INNERTUBE_NEXT_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    context: INNERTUBE_WEB_CONTEXT,
-                    videoId,
-                })
-            });
-            if (!resp.ok)
+    fetchChapters(videoId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const resp = yield fetch(INNERTUBE_NEXT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        context: INNERTUBE_WEB_CONTEXT,
+                        videoId,
+                    })
+                });
+                if (!resp.ok)
+                    return [];
+                const data = yield resp.json();
+                // Try chapterRenderer from the player bar (explicit chapters)
+                const chapters = this.extractChaptersFromPlayerBar(data);
+                if (chapters.length > 0)
+                    return chapters;
+                // Fall back to macroMarkersListItemRenderer from engagement panels
+                // (auto-generated "Key moments" from description timestamps)
+                return this.extractChaptersFromEngagementPanels(data);
+            }
+            catch (_a) {
                 return [];
-            const data = await resp.json();
-            // Try chapterRenderer from the player bar (explicit chapters)
-            const chapters = this.extractChaptersFromPlayerBar(data);
-            if (chapters.length > 0)
-                return chapters;
-            // Fall back to macroMarkersListItemRenderer from engagement panels
-            // (auto-generated "Key moments" from description timestamps)
-            return this.extractChaptersFromEngagementPanels(data);
-        }
-        catch {
-            return [];
-        }
+            }
+        });
     }
     extractChaptersFromPlayerBar(data) {
+        var _a, _b, _c, _d, _e, _f, _g, _h;
         const chapters = [];
-        const panels = data?.playerOverlays?.playerOverlayRenderer
-            ?.decoratedPlayerBarRenderer?.decoratedPlayerBarRenderer?.playerBar
-            ?.multiMarkersPlayerBarRenderer?.markersMap;
+        const panels = (_f = (_e = (_d = (_c = (_b = (_a = data === null || data === void 0 ? void 0 : data.playerOverlays) === null || _a === void 0 ? void 0 : _a.playerOverlayRenderer) === null || _b === void 0 ? void 0 : _b.decoratedPlayerBarRenderer) === null || _c === void 0 ? void 0 : _c.decoratedPlayerBarRenderer) === null || _d === void 0 ? void 0 : _d.playerBar) === null || _e === void 0 ? void 0 : _e.multiMarkersPlayerBarRenderer) === null || _f === void 0 ? void 0 : _f.markersMap;
         if (!Array.isArray(panels))
             return chapters;
         for (const panel of panels) {
-            const markers = panel?.value?.chapters;
+            const markers = (_g = panel === null || panel === void 0 ? void 0 : panel.value) === null || _g === void 0 ? void 0 : _g.chapters;
             if (!Array.isArray(markers))
                 continue;
             for (const marker of markers) {
-                const ch = marker?.chapterRenderer;
+                const ch = marker === null || marker === void 0 ? void 0 : marker.chapterRenderer;
                 if (!ch)
                     continue;
-                const title = ch.title?.simpleText || '';
+                const title = ((_h = ch.title) === null || _h === void 0 ? void 0 : _h.simpleText) || '';
                 const startMs = ch.timeRangeStartMillis;
                 if (title && typeof startMs === 'number') {
                     chapters.push({ title, start: startMs / 1000 });
@@ -287,21 +306,22 @@ class YoutubeExtractor extends _base_1.BaseExtractor {
         return chapters;
     }
     extractChaptersFromEngagementPanels(data) {
+        var _a, _b, _c, _d;
         const chapters = [];
-        const panels = data?.engagementPanels;
+        const panels = data === null || data === void 0 ? void 0 : data.engagementPanels;
         if (!Array.isArray(panels))
             return chapters;
         for (const panel of panels) {
-            const content = panel?.engagementPanelSectionListRenderer?.content;
-            const items = content?.macroMarkersListRenderer?.contents;
+            const content = (_a = panel === null || panel === void 0 ? void 0 : panel.engagementPanelSectionListRenderer) === null || _a === void 0 ? void 0 : _a.content;
+            const items = (_b = content === null || content === void 0 ? void 0 : content.macroMarkersListRenderer) === null || _b === void 0 ? void 0 : _b.contents;
             if (!Array.isArray(items))
                 continue;
             for (const item of items) {
-                const renderer = item?.macroMarkersListItemRenderer;
+                const renderer = item === null || item === void 0 ? void 0 : item.macroMarkersListItemRenderer;
                 if (!renderer)
                     continue;
-                const title = renderer.title?.simpleText || '';
-                const timeStr = renderer.timeDescription?.simpleText || '';
+                const title = ((_c = renderer.title) === null || _c === void 0 ? void 0 : _c.simpleText) || '';
+                const timeStr = ((_d = renderer.timeDescription) === null || _d === void 0 ? void 0 : _d.simpleText) || '';
                 if (!title || !timeStr)
                     continue;
                 const seconds = this.parseTimestamp(timeStr);
@@ -440,11 +460,7 @@ class YoutubeExtractor extends _base_1.BaseExtractor {
         for (const turn of turns) {
             const sentenceGroups = this.groupBySentence(turn.segments);
             for (let i = 0; i < sentenceGroups.length; i++) {
-                groups.push({
-                    ...sentenceGroups[i],
-                    speakerChange: i === 0 && turn.speakerChange,
-                    speaker: turn.speaker,
-                });
+                groups.push(Object.assign(Object.assign({}, sentenceGroups[i]), { speakerChange: i === 0 && turn.speakerChange, speaker: turn.speaker }));
             }
         }
         return groups;

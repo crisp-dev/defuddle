@@ -66,19 +66,20 @@ class ClaudeExtractor extends _conversation_1.ConversationExtractor {
         };
     }
     getTitle() {
+        var _a, _b, _c, _d, _e;
         // Try to get the page title first
-        const pageTitle = this.document.title?.trim();
+        const pageTitle = (_a = this.document.title) === null || _a === void 0 ? void 0 : _a.trim();
         if (pageTitle && pageTitle !== 'Claude') {
             // Remove ' - Claude' suffix if present
             return pageTitle.replace(/ - Claude$/, '');
         }
         // Try to get title from header
-        const headerTitle = this.document.querySelector('header .font-tiempos')?.textContent?.trim();
+        const headerTitle = (_c = (_b = this.document.querySelector('header .font-tiempos')) === null || _b === void 0 ? void 0 : _b.textContent) === null || _c === void 0 ? void 0 : _c.trim();
         if (headerTitle) {
             return headerTitle;
         }
         // Fall back to first user message
-        const firstUserMessage = this.articles?.item(0)?.querySelector('[data-testid="user-message"]');
+        const firstUserMessage = (_e = (_d = this.articles) === null || _d === void 0 ? void 0 : _d.item(0)) === null || _e === void 0 ? void 0 : _e.querySelector('[data-testid="user-message"]');
         if (firstUserMessage) {
             const text = firstUserMessage.textContent || '';
             // Truncate to first 50 characters if longer

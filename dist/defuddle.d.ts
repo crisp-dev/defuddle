@@ -31,6 +31,7 @@ export declare class Defuddle {
      * Remove dangerous elements and attributes from this.doc.
      * Called after parseInternal so that extractors and schema extraction
      * can still read script tags they depend on.
+     * OPTIMIZED: Single-pass DOM traversal combining element and attribute removal.
      */
     private _stripUnsafeElements;
     /**
@@ -77,7 +78,6 @@ export declare class Defuddle {
     private findTableBasedContent;
     private findContentByScoring;
     private getElementSelector;
-    private getComputedStyle;
     /**
      * Resolve relative URLs to absolute within a DOM element
      */

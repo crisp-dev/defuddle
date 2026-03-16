@@ -12,14 +12,16 @@ class HackerNewsExtractor extends _base_1.BaseExtractor {
         this.mainComment = this.isCommentPage ? this.findMainComment() : null;
     }
     detectCommentPage() {
+        var _a, _b;
         // Comment pages have an "on: <story title>" link but no story title row
-        return !!this.mainPost?.querySelector('.onstory') && !this.mainPost?.querySelector('.titleline');
+        return !!((_a = this.mainPost) === null || _a === void 0 ? void 0 : _a.querySelector('.onstory')) && !((_b = this.mainPost) === null || _b === void 0 ? void 0 : _b.querySelector('.titleline'));
     }
     findMainComment() {
+        var _a;
         // Use the tr.athing row which contains both the comment metadata (.comhead)
         // and the comment text (.commtext). The .comment div alone doesn't include
         // the author (.hnuser) or timestamp (.age) which are in the sibling .comhead.
-        return this.mainPost?.querySelector('tr.athing') || null;
+        return ((_a = this.mainPost) === null || _a === void 0 ? void 0 : _a.querySelector('tr.athing')) || null;
     }
     canExtract() {
         return !!this.mainPost;
@@ -52,17 +54,18 @@ class HackerNewsExtractor extends _base_1.BaseExtractor {
         return (0, comments_1.buildContentHtml)('hackernews', postContent, comments);
     }
     getPostContent() {
+        var _a, _b, _c, _d;
         if (!this.mainPost)
             return '';
         // If this is a comment page, use the comment as the main content
         if (this.isCommentPage && this.mainComment) {
-            const author = this.mainComment.querySelector('.hnuser')?.textContent || '[deleted]';
+            const author = ((_a = this.mainComment.querySelector('.hnuser')) === null || _a === void 0 ? void 0 : _a.textContent) || '[deleted]';
             const commtext = this.mainComment.querySelector('.commtext');
             const commentText = commtext ? (0, dom_1.serializeHTML)(commtext) : '';
             const timeElement = this.mainComment.querySelector('.age');
-            const timestamp = timeElement?.getAttribute('title') || '';
+            const timestamp = (timeElement === null || timeElement === void 0 ? void 0 : timeElement.getAttribute('title')) || '';
             const date = timestamp.split('T')[0] || '';
-            const points = this.mainComment.querySelector('.score')?.textContent?.trim() || '';
+            const points = ((_c = (_b = this.mainComment.querySelector('.score')) === null || _b === void 0 ? void 0 : _b.textContent) === null || _c === void 0 ? void 0 : _c.trim()) || '';
             return (0, comments_1.buildComment)({
                 author,
                 date,
@@ -72,8 +75,8 @@ class HackerNewsExtractor extends _base_1.BaseExtractor {
         }
         // Otherwise handle regular post content
         const titleRow = this.mainPost.querySelector('tr.athing');
-        const subRow = titleRow?.nextElementSibling;
-        const url = titleRow?.querySelector('.titleline a')?.getAttribute('href') || '';
+        const subRow = titleRow === null || titleRow === void 0 ? void 0 : titleRow.nextElementSibling;
+        const url = ((_d = titleRow === null || titleRow === void 0 ? void 0 : titleRow.querySelector('.titleline a')) === null || _d === void 0 ? void 0 : _d.getAttribute('href')) || '';
         let content = '';
         if (url) {
             content += `<p><a href="${url}" target="_blank">${url}</a></p>`;
@@ -89,6 +92,7 @@ class HackerNewsExtractor extends _base_1.BaseExtractor {
         return this.processComments(comments);
     }
     processComments(comments) {
+        var _a, _b, _c, _d;
         const commentData = [];
         const processedIds = new Set();
         for (const comment of comments) {
@@ -96,16 +100,16 @@ class HackerNewsExtractor extends _base_1.BaseExtractor {
             if (!id || processedIds.has(id))
                 continue;
             processedIds.add(id);
-            const indent = comment.querySelector('.ind img')?.getAttribute('width') || '0';
+            const indent = ((_a = comment.querySelector('.ind img')) === null || _a === void 0 ? void 0 : _a.getAttribute('width')) || '0';
             const depth = parseInt(indent) / 40;
             const commentText = comment.querySelector('.commtext');
-            const author = comment.querySelector('.hnuser')?.textContent || '[deleted]';
+            const author = ((_b = comment.querySelector('.hnuser')) === null || _b === void 0 ? void 0 : _b.textContent) || '[deleted]';
             const timeElement = comment.querySelector('.age');
-            const points = comment.querySelector('.score')?.textContent?.trim() || '';
+            const points = ((_d = (_c = comment.querySelector('.score')) === null || _c === void 0 ? void 0 : _c.textContent) === null || _d === void 0 ? void 0 : _d.trim()) || '';
             if (!commentText)
                 continue;
             const commentUrl = `https://news.ycombinator.com/item?id=${id}`;
-            const timestamp = timeElement?.getAttribute('title') || '';
+            const timestamp = (timeElement === null || timeElement === void 0 ? void 0 : timeElement.getAttribute('title')) || '';
             const date = timestamp.split('T')[0] || '';
             commentData.push({
                 author,
@@ -120,20 +124,22 @@ class HackerNewsExtractor extends _base_1.BaseExtractor {
     }
     getPostId() {
         const match = this.url.match(/id=(\d+)/);
-        return match?.[1] || '';
+        return (match === null || match === void 0 ? void 0 : match[1]) || '';
     }
     getPostTitle() {
+        var _a, _b, _c, _d, _e;
         if (this.isCommentPage && this.mainComment) {
-            const author = this.mainComment.querySelector('.hnuser')?.textContent || '[deleted]';
-            const commentText = this.mainComment.querySelector('.commtext')?.textContent || '';
+            const author = ((_a = this.mainComment.querySelector('.hnuser')) === null || _a === void 0 ? void 0 : _a.textContent) || '[deleted]';
+            const commentText = ((_b = this.mainComment.querySelector('.commtext')) === null || _b === void 0 ? void 0 : _b.textContent) || '';
             // Use first 50 characters of comment as title
             const preview = commentText.trim().slice(0, 50) + (commentText.length > 50 ? '...' : '');
             return `Comment by ${author}: ${preview}`;
         }
-        return this.mainPost?.querySelector('.titleline')?.textContent?.trim() || '';
+        return ((_e = (_d = (_c = this.mainPost) === null || _c === void 0 ? void 0 : _c.querySelector('.titleline')) === null || _d === void 0 ? void 0 : _d.textContent) === null || _e === void 0 ? void 0 : _e.trim()) || '';
     }
     getPostAuthor() {
-        return this.mainPost?.querySelector('.hnuser')?.textContent?.trim() || '';
+        var _a, _b, _c;
+        return ((_c = (_b = (_a = this.mainPost) === null || _a === void 0 ? void 0 : _a.querySelector('.hnuser')) === null || _b === void 0 ? void 0 : _b.textContent) === null || _c === void 0 ? void 0 : _c.trim()) || '';
     }
     createDescription() {
         const title = this.getPostTitle();
@@ -147,7 +153,7 @@ class HackerNewsExtractor extends _base_1.BaseExtractor {
         if (!this.mainPost)
             return '';
         const timeElement = this.mainPost.querySelector('.age');
-        const timestamp = timeElement?.getAttribute('title') || '';
+        const timestamp = (timeElement === null || timeElement === void 0 ? void 0 : timeElement.getAttribute('title')) || '';
         return timestamp.split('T')[0] || '';
     }
 }

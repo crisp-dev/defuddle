@@ -44,12 +44,17 @@ export const INLINE_ELEMENTS = new Set([
 
 // Selectors to be removed
 export const EXACT_SELECTORS = [
-	// scripts, styles
+	// scripts, styles, inert template content
 	'noscript',
 	'script:not([type^="math/"])',
 	'style',
 	'meta',
 	'link',
+	// <template> elements are never rendered — their content is a deferred
+	// DocumentFragment only activated by JS. In server-side DOM libraries
+	// (linkedom, JSDOM) their inner HTML leaks into innerHTML serialization,
+	// so we must strip them explicitly.
+	'template',
 
 	// ads
 	'.ad:not([class*="gradient"])',

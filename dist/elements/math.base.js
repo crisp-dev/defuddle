@@ -56,6 +56,7 @@ const getMathMLFromElement = (el) => {
 };
 exports.getMathMLFromElement = getMathMLFromElement;
 const getBasicLatexFromElement = (el) => {
+    var _a, _b, _c;
     // Direct data-latex attribute
     const dataLatex = el.getAttribute('data-latex');
     if (dataLatex) {
@@ -81,30 +82,30 @@ const getBasicLatexFromElement = (el) => {
     }
     // LaTeX in annotation
     const annotation = el.querySelector('annotation[encoding="application/x-tex"]');
-    if (annotation?.textContent) {
+    if (annotation === null || annotation === void 0 ? void 0 : annotation.textContent) {
         return annotation.textContent.trim();
     }
     // KaTeX formats
     if (el.matches('.katex')) {
         const katexAnnotation = el.querySelector('.katex-mathml annotation[encoding="application/x-tex"]');
-        if (katexAnnotation?.textContent) {
+        if (katexAnnotation === null || katexAnnotation === void 0 ? void 0 : katexAnnotation.textContent) {
             return katexAnnotation.textContent.trim();
         }
     }
     // MathJax scripts
     if (el.matches('script[type="math/tex"]') || el.matches('script[type="math/tex; mode=display"]')) {
-        return el.textContent?.trim() || null;
+        return ((_a = el.textContent) === null || _a === void 0 ? void 0 : _a.trim()) || null;
     }
     // Check for sibling script element
     if (el.parentElement) {
         const siblingScript = el.parentElement.querySelector('script[type="math/tex"], script[type="math/tex; mode=display"]');
         if (siblingScript) {
-            return siblingScript.textContent?.trim() || null;
+            return ((_b = siblingScript.textContent) === null || _b === void 0 ? void 0 : _b.trim()) || null;
         }
     }
     // For <math> elements, textContent gives clean Unicode (e.g. "f′", "a~")
     // Only safe for <math> — other containers (mjx-container, .katex) have garbage textContent
-    if (el.tagName.toLowerCase() === 'math' && el.textContent?.trim()) {
+    if (el.tagName.toLowerCase() === 'math' && ((_c = el.textContent) === null || _c === void 0 ? void 0 : _c.trim())) {
         return el.textContent.trim();
     }
     // Fallback to alt text only
@@ -129,7 +130,7 @@ const isBlockDisplay = (el) => {
     }
     // Check if preceded by block element
     const prevElement = el.previousElementSibling;
-    if (prevElement?.tagName.toLowerCase() === 'p') {
+    if ((prevElement === null || prevElement === void 0 ? void 0 : prevElement.tagName.toLowerCase()) === 'p') {
         return true;
     }
     // Check specific formats

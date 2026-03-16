@@ -29,10 +29,11 @@ function createMarkdownContent(content, url) {
     turndownService.addRule('table', {
         filter: 'table',
         replacement: function (content, node) {
+            var _a, _b;
             if (!isGenericElement(node))
                 return content;
             // Check if it's an ArXiv equation table
-            if (node.classList?.contains('ltx_equation') || node.classList?.contains('ltx_eqn_table')) {
+            if (((_a = node.classList) === null || _a === void 0 ? void 0 : _a.contains('ltx_equation')) || ((_b = node.classList) === null || _b === void 0 ? void 0 : _b.contains('ltx_eqn_table'))) {
                 return handleNestedEquations(node);
             }
             // Detect layout tables (used for styling/positioning, not data)
@@ -108,10 +109,11 @@ function createMarkdownContent(content, url) {
     turndownService.addRule('listItem', {
         filter: 'li',
         replacement: function (content, node, options) {
+            var _a;
             if (!isGenericElement(node))
                 return content;
             // Handle task list items
-            const isTaskListItem = node.classList?.contains('task-list-item');
+            const isTaskListItem = (_a = node.classList) === null || _a === void 0 ? void 0 : _a.contains('task-list-item');
             const checkbox = node.querySelector('input[type="checkbox"]');
             let taskListMarker = '';
             if (isTaskListItem && checkbox && isGenericElement(checkbox)) {
@@ -163,6 +165,7 @@ function createMarkdownContent(content, url) {
     turndownService.addRule('figure', {
         filter: 'figure',
         replacement: function (content, node) {
+            var _a;
             if (!isGenericElement(node))
                 return content;
             const img = node.querySelector('img');
@@ -174,7 +177,7 @@ function createMarkdownContent(content, url) {
             let caption = '';
             if (figcaption && isGenericElement(figcaption)) {
                 const tagSpan = figcaption.querySelector('.ltx_tag_figure');
-                const tagText = tagSpan && isGenericElement(tagSpan) ? tagSpan.textContent?.trim() : '';
+                const tagText = tagSpan && isGenericElement(tagSpan) ? (_a = tagSpan.textContent) === null || _a === void 0 ? void 0 : _a.trim() : '';
                 // Process the caption content, including math elements
                 let captionContent = (0, dom_1.serializeHTML)(figcaption);
                 const ownerDoc = node.ownerDocument;
@@ -285,7 +288,8 @@ function createMarkdownContent(content, url) {
     });
     turndownService.addRule('arXivEnumerate', {
         filter: (node) => {
-            return node.nodeName === 'OL' && isGenericElement(node) && (node.classList?.contains('ltx_enumerate') ?? false);
+            var _a, _b;
+            return node.nodeName === 'OL' && isGenericElement(node) && ((_b = (_a = node.classList) === null || _a === void 0 ? void 0 : _a.contains('ltx_enumerate')) !== null && _b !== void 0 ? _b : false);
         },
         replacement: function (content, node) {
             if (!isGenericElement(node))
@@ -335,6 +339,7 @@ function createMarkdownContent(content, url) {
             if (!isGenericElement(node))
                 return content;
             const references = Array.from(node.children || []).map(li => {
+                var _a, _b;
                 let id;
                 if (isGenericElement(li)) {
                     const liId = li.getAttribute('id');
@@ -343,19 +348,19 @@ function createMarkdownContent(content, url) {
                             id = liId.replace('fn:', '');
                         }
                         else {
-                            const match = liId.split('/').pop()?.match(/cite_note-(.+)/);
+                            const match = (_a = liId.split('/').pop()) === null || _a === void 0 ? void 0 : _a.match(/cite_note-(.+)/);
                             id = match ? match[1] : liId;
                         }
                     }
                     // Remove the leading sup element if its content matches the footnote id
                     const supElement = li.querySelector('sup');
-                    if (supElement && isGenericElement(supElement) && supElement.textContent?.trim() === id) {
+                    if (supElement && isGenericElement(supElement) && ((_b = supElement.textContent) === null || _b === void 0 ? void 0 : _b.trim()) === id) {
                         supElement.remove();
                     }
                     const referenceContent = turndownService.turndown((0, dom_1.serializeHTML)(li));
                     // Remove the backlink from the footnote content
                     const cleanedContent = referenceContent.replace(/\s*↩︎$/, '').trim();
-                    return `[^${id?.toLowerCase()}]: ${cleanedContent}`;
+                    return `[^${id === null || id === void 0 ? void 0 : id.toLowerCase()}]: ${cleanedContent}`;
                 }
                 return '';
             });
@@ -365,12 +370,13 @@ function createMarkdownContent(content, url) {
     // General removal rules for varous website elements
     turndownService.addRule('removals', {
         filter: function (node) {
+            var _a, _b;
             if (!isGenericElement(node))
                 return false;
             // Remove the Defuddle backlink from the footnote content
-            if (node.getAttribute('href')?.includes('#fnref'))
+            if ((_a = node.getAttribute('href')) === null || _a === void 0 ? void 0 : _a.includes('#fnref'))
                 return true;
-            if (node.classList?.contains('footnote-backref'))
+            if ((_b = node.classList) === null || _b === void 0 ? void 0 : _b.contains('footnote-backref'))
                 return true;
             return false;
         },
@@ -393,6 +399,7 @@ function createMarkdownContent(content, url) {
             return node.nodeName === 'PRE';
         },
         replacement: (content, node) => {
+            var _a, _b;
             if (!isGenericElement(node))
                 return content;
             const codeElement = node.querySelector('code');
@@ -400,7 +407,7 @@ function createMarkdownContent(content, url) {
                 return content;
             const language = codeElement.getAttribute('data-lang')
                 || codeElement.getAttribute('data-language')
-                || codeElement.getAttribute('class')?.match(/language-(\w+)/)?.[1]
+                || ((_b = (_a = codeElement.getAttribute('class')) === null || _a === void 0 ? void 0 : _a.match(/language-(\w+)/)) === null || _b === void 0 ? void 0 : _b[1])
                 || node.getAttribute('data-language')
                 || '';
             const code = codeElement.textContent || '';
@@ -413,13 +420,15 @@ function createMarkdownContent(content, url) {
     });
     turndownService.addRule('math', {
         filter: (node) => {
+            var _a, _b, _c;
             return node.nodeName.toLowerCase() === 'math' ||
                 (isGenericElement(node) &&
-                    (node.classList?.contains('mwe-math-element') ||
-                        node.classList?.contains('mwe-math-fallback-image-inline') ||
-                        node.classList?.contains('mwe-math-fallback-image-display')));
+                    (((_a = node.classList) === null || _a === void 0 ? void 0 : _a.contains('mwe-math-element')) ||
+                        ((_b = node.classList) === null || _b === void 0 ? void 0 : _b.contains('mwe-math-fallback-image-inline')) ||
+                        ((_c = node.classList) === null || _c === void 0 ? void 0 : _c.contains('mwe-math-fallback-image-display'))));
         },
         replacement: (content, node) => {
+            var _a, _b, _c, _d, _e, _f;
             if (!isGenericElement(node))
                 return content;
             let latex = extractLatex(node);
@@ -429,9 +438,9 @@ function createMarkdownContent(content, url) {
             const isInTable = typeof node.closest === 'function' ? node.closest('table') !== null : false;
             // Check if it's an inline or block math element
             if (!isInTable && (node.getAttribute('display') === 'block' ||
-                node.classList?.contains('mwe-math-fallback-image-display') ||
+                ((_a = node.classList) === null || _a === void 0 ? void 0 : _a.contains('mwe-math-fallback-image-display')) ||
                 (node.parentNode && isGenericElement(node.parentNode) &&
-                    node.parentNode.classList?.contains('mwe-math-element') &&
+                    ((_b = node.parentNode.classList) === null || _b === void 0 ? void 0 : _b.contains('mwe-math-element')) &&
                     node.parentNode.previousSibling && isGenericElement(node.parentNode.previousSibling) &&
                     node.parentNode.previousSibling.nodeName.toLowerCase() === 'p'))) {
                 return `\n$$\n${latex}\n$$\n`;
@@ -440,10 +449,10 @@ function createMarkdownContent(content, url) {
                 // For inline math, ensure there's a space before and after only if needed
                 const prevNode = node.previousSibling;
                 const nextNode = node.nextSibling;
-                const prevChar = prevNode && isGenericElement(prevNode) ? prevNode.textContent?.slice(-1) || '' : '';
-                const nextChar = nextNode && isGenericElement(nextNode) ? nextNode.textContent?.[0] || '' : '';
-                const isStartOfLine = !prevNode || ((0, utils_1.isTextNode)(prevNode) && prevNode.textContent?.trim() === '');
-                const isEndOfLine = !nextNode || ((0, utils_1.isTextNode)(nextNode) && nextNode.textContent?.trim() === '');
+                const prevChar = prevNode && isGenericElement(prevNode) ? ((_c = prevNode.textContent) === null || _c === void 0 ? void 0 : _c.slice(-1)) || '' : '';
+                const nextChar = nextNode && isGenericElement(nextNode) ? ((_d = nextNode.textContent) === null || _d === void 0 ? void 0 : _d[0]) || '' : '';
+                const isStartOfLine = !prevNode || ((0, utils_1.isTextNode)(prevNode) && ((_e = prevNode.textContent) === null || _e === void 0 ? void 0 : _e.trim()) === '');
+                const isEndOfLine = !nextNode || ((0, utils_1.isTextNode)(nextNode) && ((_f = nextNode.textContent) === null || _f === void 0 ? void 0 : _f.trim()) === '');
                 const leftSpace = (!isStartOfLine && prevChar && !/[\s$]/.test(prevChar)) ? ' ' : '';
                 const rightSpace = (!isEndOfLine && nextChar && !/[\s$]/.test(nextChar)) ? ' ' : '';
                 return `${leftSpace}$${latex}$${rightSpace}`;
@@ -452,10 +461,12 @@ function createMarkdownContent(content, url) {
     });
     turndownService.addRule('katex', {
         filter: (node) => {
+            var _a, _b;
             return isGenericElement(node) &&
-                (node.classList?.contains('math') || node.classList?.contains('katex'));
+                (((_a = node.classList) === null || _a === void 0 ? void 0 : _a.contains('math')) || ((_b = node.classList) === null || _b === void 0 ? void 0 : _b.contains('katex')));
         },
         replacement: (content, node) => {
+            var _a, _b;
             if (!isGenericElement(node))
                 return content;
             // Try to find the original LaTeX content
@@ -468,11 +479,11 @@ function createMarkdownContent(content, url) {
             }
             // 3. If still no content, use text content as fallback
             if (!latex) {
-                latex = node.textContent?.trim() || '';
+                latex = ((_a = node.textContent) === null || _a === void 0 ? void 0 : _a.trim()) || '';
             }
             // Determine if it's an inline formula
             const mathElement = node.querySelector('.katex-mathml math');
-            const isInline = node.classList?.contains('math-inline') ||
+            const isInline = ((_b = node.classList) === null || _b === void 0 ? void 0 : _b.contains('math-inline')) ||
                 (mathElement && isGenericElement(mathElement) && mathElement.getAttribute('display') !== 'block');
             if (isInline) {
                 return `$${latex}$`;
@@ -484,9 +495,10 @@ function createMarkdownContent(content, url) {
     });
     turndownService.addRule('callout', {
         filter: (node) => {
+            var _a;
             return (node.nodeName.toLowerCase() === 'div' &&
                 isGenericElement(node) &&
-                node.classList?.contains('markdown-alert'));
+                ((_a = node.classList) === null || _a === void 0 ? void 0 : _a.contains('markdown-alert')));
         },
         replacement: (content, node) => {
             if (!isGenericElement(node))

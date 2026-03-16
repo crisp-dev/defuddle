@@ -41,10 +41,11 @@ function buildContentHtml(site, postContent, comments) {
  * Uses <blockquote> elements to represent reply hierarchy.
  */
 function buildCommentTree(comments) {
+    var _a, _b, _c;
     const parts = [];
     const blockquoteStack = [];
     for (const comment of comments) {
-        const depth = comment.depth ?? 0;
+        const depth = (_a = comment.depth) !== null && _a !== void 0 ? _a : 0;
         if (depth === 0) {
             while (blockquoteStack.length > 0) {
                 parts.push('</blockquote>');
@@ -54,7 +55,7 @@ function buildCommentTree(comments) {
             blockquoteStack.push(0);
         }
         else {
-            const currentDepth = blockquoteStack[blockquoteStack.length - 1] ?? -1;
+            const currentDepth = (_b = blockquoteStack[blockquoteStack.length - 1]) !== null && _b !== void 0 ? _b : -1;
             if (depth < currentDepth) {
                 while (blockquoteStack.length > 0 && blockquoteStack[blockquoteStack.length - 1] >= depth) {
                     parts.push('</blockquote>');
@@ -63,7 +64,7 @@ function buildCommentTree(comments) {
             }
             // Open a new level if needed (handles both deeper nesting
             // and reopening after closing, e.g. depth 2 → 1 → 1)
-            const newCurrentDepth = blockquoteStack[blockquoteStack.length - 1] ?? -1;
+            const newCurrentDepth = (_c = blockquoteStack[blockquoteStack.length - 1]) !== null && _c !== void 0 ? _c : -1;
             if (depth > newCurrentDepth) {
                 parts.push('<blockquote>');
                 blockquoteStack.push(depth);

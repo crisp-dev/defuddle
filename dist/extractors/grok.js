@@ -22,6 +22,7 @@ class GrokExtractor extends _conversation_1.ConversationExtractor {
         if (!this.messageBubbles || this.messageBubbles.length === 0)
             return messages;
         this.messageBubbles.forEach((container) => {
+            var _a;
             // Note: Relies on layout classes 'items-end' and 'items-start' which might change.
             const isUserMessage = container.classList.contains('items-end');
             const isGrokMessage = container.classList.contains('items-start');
@@ -46,7 +47,7 @@ class GrokExtractor extends _conversation_1.ConversationExtractor {
                 // Clone the bubble to modify it without affecting the original page
                 const clonedBubble = messageBubble.cloneNode(true);
                 // Remove known non-content elements like the DeepSearch artifact
-                clonedBubble.querySelector('.relative.border.border-border-l1.bg-surface-base')?.remove();
+                (_a = clonedBubble.querySelector('.relative.border.border-border-l1.bg-surface-base')) === null || _a === void 0 ? void 0 : _a.remove();
                 // Add selectors here for any other known elements to remove (e.g., buttons, toolbars within the bubble)
                 content = (0, dom_1.serializeHTML)(clonedBubble);
                 // Process footnotes/links in the cleaned content
@@ -68,8 +69,9 @@ class GrokExtractor extends _conversation_1.ConversationExtractor {
         return this.footnotes;
     }
     getMetadata() {
+        var _a;
         const title = this.getTitle();
-        const messageCount = this.messageBubbles?.length || 0;
+        const messageCount = ((_a = this.messageBubbles) === null || _a === void 0 ? void 0 : _a.length) || 0;
         return {
             title,
             site: 'Grok',
@@ -79,8 +81,9 @@ class GrokExtractor extends _conversation_1.ConversationExtractor {
         };
     }
     getTitle() {
+        var _a, _b;
         // Try to get the page title first (more reliable)
-        const pageTitle = this.document.title?.trim();
+        const pageTitle = (_a = this.document.title) === null || _a === void 0 ? void 0 : _a.trim();
         if (pageTitle && pageTitle !== 'Grok' && !pageTitle.startsWith('Grok by ')) {
             // Remove ' - Grok' suffix if present
             return pageTitle.replace(/\s-\s*Grok$/, '').trim();
@@ -91,7 +94,7 @@ class GrokExtractor extends _conversation_1.ConversationExtractor {
         if (firstUserContainer) {
             const messageBubble = firstUserContainer.querySelector('.message-bubble');
             if (messageBubble) {
-                const text = messageBubble.textContent?.trim() || '';
+                const text = ((_b = messageBubble.textContent) === null || _b === void 0 ? void 0 : _b.trim()) || '';
                 // Truncate to first 50 characters if longer
                 return text.length > 50 ? text.slice(0, 50) + '...' : text;
             }

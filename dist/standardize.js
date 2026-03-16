@@ -53,9 +53,10 @@ const ELEMENT_STANDARDIZATION_RULES = [
         element: 'ul',
         // Custom handler for list type detection and transformation
         transform: (el, doc) => {
+            var _a;
             // First determine if this is an ordered list
             const firstItem = el.querySelector('div[role="listitem"] .label');
-            const label = firstItem?.textContent?.trim() || '';
+            const label = ((_a = firstItem === null || firstItem === void 0 ? void 0 : firstItem.textContent) === null || _a === void 0 ? void 0 : _a.trim()) || '';
             const isOrdered = label.match(/^\d+\)/);
             // Create the appropriate list type
             const list = doc.createElement(isOrdered ? 'ol' : 'ul');
@@ -75,8 +76,9 @@ const ELEMENT_STANDARDIZATION_RULES = [
                     // Convert any nested lists recursively
                     const nestedLists = content.querySelectorAll('div[role="list"]');
                     nestedLists.forEach(nestedList => {
+                        var _a;
                         const firstNestedItem = nestedList.querySelector('div[role="listitem"] .label');
-                        const nestedLabel = firstNestedItem?.textContent?.trim() || '';
+                        const nestedLabel = ((_a = firstNestedItem === null || firstNestedItem === void 0 ? void 0 : firstNestedItem.textContent) === null || _a === void 0 ? void 0 : _a.trim()) || '';
                         const isNestedOrdered = nestedLabel.match(/^\d+\)/);
                         const newNestedList = doc.createElement(isNestedOrdered ? 'ol' : 'ul');
                         // Process nested items
@@ -146,17 +148,19 @@ function standardizeContent(element, metadata, doc, debug = false) {
         // Unwrap javascript: links — keep text, remove the link
         const jsLinks = Array.from(element.querySelectorAll('a[href^="javascript:"]'));
         jsLinks.forEach(link => {
+            var _a;
             while (link.firstChild) {
-                link.parentNode?.insertBefore(link.firstChild, link);
+                (_a = link.parentNode) === null || _a === void 0 ? void 0 : _a.insertBefore(link.firstChild, link);
             }
             link.remove();
         });
         // Unwrap anchor links that wrap headings (e.g. clickable section headers)
         const headingAnchors = Array.from(element.querySelectorAll('a[href^="#"]'));
         headingAnchors.forEach(link => {
+            var _a;
             if (link.querySelector('h1, h2, h3, h4, h5, h6')) {
                 while (link.firstChild) {
-                    link.parentNode?.insertBefore(link.firstChild, link);
+                    (_a = link.parentNode) === null || _a === void 0 ? void 0 : _a.insertBefore(link.firstChild, link);
                 }
                 link.remove();
             }
@@ -189,6 +193,7 @@ function standardizeContent(element, metadata, doc, debug = false) {
  * in a <pre> element, so they get treated as code blocks.
  */
 function wrapPreformattedCode(element, doc) {
+    var _a;
     const codeElements = Array.from(element.querySelectorAll('code'));
     for (const code of codeElements) {
         // Skip if already inside a <pre>
@@ -200,7 +205,7 @@ function wrapPreformattedCode(element, doc) {
             continue;
         // Wrap in <pre>
         const pre = doc.createElement('pre');
-        code.parentNode?.insertBefore(pre, code);
+        (_a = code.parentNode) === null || _a === void 0 ? void 0 : _a.insertBefore(pre, code);
         pre.appendChild(code);
     }
 }
@@ -313,6 +318,7 @@ function standardizeHeadings(element, title, doc) {
     };
     const h1s = element.getElementsByTagName('h1');
     Array.from(h1s).forEach(h1 => {
+        var _a;
         const h2 = doc.createElement('h2');
         (0, dom_1.transferContent)(h1, h2);
         // Copy allowed attributes
@@ -321,7 +327,7 @@ function standardizeHeadings(element, title, doc) {
                 h2.setAttribute(attr.name, attr.value);
             }
         });
-        h1.parentNode?.replaceChild(h2, h1);
+        (_a = h1.parentNode) === null || _a === void 0 ? void 0 : _a.replaceChild(h2, h1);
     });
     // Remove first H2 if it matches title
     const h2s = element.getElementsByTagName('h2');
@@ -335,6 +341,7 @@ function standardizeHeadings(element, title, doc) {
     }
 }
 function removeHtmlComments(element) {
+    var _a;
     let removedCount = 0;
     const doc = element.ownerDocument;
     // Use TreeWalker to find comment nodes directly (O(n) instead of O(n*m))
@@ -344,7 +351,7 @@ function removeHtmlComments(element) {
         comments.push(walker.currentNode);
     }
     for (const node of comments) {
-        node.parentNode?.removeChild(node);
+        (_a = node.parentNode) === null || _a === void 0 ? void 0 : _a.removeChild(node);
         removedCount++;
     }
     (0, utils_1.logDebug)(_debug, 'Removed HTML comments:', removedCount);
@@ -423,6 +430,7 @@ function unwrapBareSpans(element) {
 function removeEmptyElements(element) {
     let removedCount = 0;
     const isEmptyElement = (el) => {
+        var _a;
         if (constants_1.ALLOWED_EMPTY_ELEMENTS.has(el.tagName.toLowerCase()))
             return false;
         // Special case: divs that only contain spans with commas
@@ -436,7 +444,7 @@ function removeEmptyElements(element) {
                         allCommaSpans = false;
                         break;
                     }
-                    const content = child.textContent?.trim() || '';
+                    const content = ((_a = child.textContent) === null || _a === void 0 ? void 0 : _a.trim()) || '';
                     if (content !== ',' && content !== '' && content !== ' ') {
                         allCommaSpans = false;
                         break;
@@ -494,13 +502,14 @@ function stripExtraBrElements(element) {
     };
     // Process all br elements
     brElements.forEach(currentNode => {
+        var _a;
         // Check if this br is consecutive with previous ones
         let isConsecutive = false;
         if (consecutiveBrs.length > 0) {
             const lastBr = consecutiveBrs[consecutiveBrs.length - 1];
             let node = currentNode.previousSibling;
             // Skip whitespace text nodes
-            while (node && (0, utils_1.isTextNode)(node) && !node.textContent?.trim()) {
+            while (node && (0, utils_1.isTextNode)(node) && !((_a = node.textContent) === null || _a === void 0 ? void 0 : _a.trim())) {
                 node = node.previousSibling;
             }
             if (node === lastBr) {
@@ -549,6 +558,7 @@ function removeEmptyLines(element, doc) {
     const startTime = Date.now();
     // First pass: remove empty text nodes
     const removeEmptyTextNodes = (node) => {
+        var _a;
         // Skip if inside pre or code
         if ((0, utils_1.isElement)(node)) {
             const tag = node.tagName.toLowerCase();
@@ -565,7 +575,7 @@ function removeEmptyLines(element, doc) {
             // If it's completely empty or just zero-width/invisible characters, remove it
             // Preserve nodes with regular spaces or &nbsp; as they may separate words
             if (!text || /^[\u200C\u200B\u200D\u200E\u200F\uFEFF]*$/.test(text)) {
-                node.parentNode?.removeChild(node);
+                (_a = node.parentNode) === null || _a === void 0 ? void 0 : _a.removeChild(node);
                 removedCount++;
             }
             else {
@@ -589,6 +599,7 @@ function removeEmptyLines(element, doc) {
     };
     // Second pass: clean up empty elements and normalize spacing
     const cleanupEmptyElements = (node) => {
+        var _a;
         if (!(0, utils_1.isElement)(node))
             return;
         // Skip pre and code elements
@@ -603,7 +614,7 @@ function removeEmptyLines(element, doc) {
         // Then normalize this element's whitespace
         node.normalize(); // Combine adjacent text nodes
         // Special handling for block elements
-        const isBlockElement = (0, utils_1.getComputedStyle)(node)?.display === 'block';
+        const isBlockElement = ((_a = (0, utils_1.getComputedStyle)(node)) === null || _a === void 0 ? void 0 : _a.display) === 'block';
         // Remove whitespace-only text nodes at start/end
         const whitespacePattern = isBlockElement ? /^[\n\r\t \u200C\u200B\u200D\u200E\u200F\uFEFF\xA0]*$/ : /^[\n\r\t\u200C\u200B\u200D\u200E\u200F\uFEFF]*$/;
         while (node.firstChild &&
@@ -694,10 +705,11 @@ function standardizeElements(element, doc) {
             return;
         const fragment = doc.createDocumentFragment();
         mathElements.forEach(mathEl => {
+            var _a;
             // Extract LaTeX from alttext or annotation
             const alttext = mathEl.getAttribute('alttext');
             const annotation = mathEl.querySelector('annotation[encoding="application/x-tex"]');
-            const latex = alttext || annotation?.textContent?.trim() || '';
+            const latex = alttext || ((_a = annotation === null || annotation === void 0 ? void 0 : annotation.textContent) === null || _a === void 0 ? void 0 : _a.trim()) || '';
             if (!latex)
                 return;
             const isBlock = mathEl.getAttribute('display') === 'block' ||
@@ -791,9 +803,10 @@ function flattenWrapperElements(element, doc) {
     // Helper function to check if an element directly contains inline content
     // This helps prevent unwrapping divs that visually act as paragraphs.
     function hasDirectInlineContent(el) {
+        var _a;
         for (const child of el.childNodes) {
             // Check for non-empty text nodes
-            if ((0, utils_1.isTextNode)(child) && child.textContent?.trim()) {
+            if ((0, utils_1.isTextNode)(child) && ((_a = child.textContent) === null || _a === void 0 ? void 0 : _a.trim())) {
                 return true;
             }
             // Check for element nodes that are considered inline
@@ -829,12 +842,13 @@ function flattenWrapperElements(element, doc) {
         return false;
     };
     const isWrapperElement = (el) => {
+        var _a;
         // If it directly contains inline content, it's NOT a wrapper
         if (hasDirectInlineContent(el)) {
             return false;
         }
         // Check if it's just empty space
-        if (!el.textContent?.trim())
+        if (!((_a = el.textContent) === null || _a === void 0 ? void 0 : _a.trim()))
             return true;
         // Check if it only contains other block elements
         const children = Array.from(el.children);
@@ -857,7 +871,7 @@ function flattenWrapperElements(element, doc) {
         if (isWrapper)
             return true;
         // Check if it has excessive whitespace or empty text nodes
-        const textNodes = Array.from(el.childNodes).filter(node => (0, utils_1.isTextNode)(node) && node.textContent?.trim());
+        const textNodes = Array.from(el.childNodes).filter(node => { var _a; return (0, utils_1.isTextNode)(node) && ((_a = node.textContent) === null || _a === void 0 ? void 0 : _a.trim()); });
         if (textNodes.length === 0)
             return true;
         // Check if it only contains block elements
@@ -871,12 +885,13 @@ function flattenWrapperElements(element, doc) {
     };
     // Function to process a single element
     const processElement = (el) => {
+        var _a, _b;
         // Skip processing if element has been removed or should be preserved
         if (!el.isConnected || shouldPreserveElement(el))
             return false;
         const tagName = el.tagName.toLowerCase();
         // Case 1: Element is truly empty (no text content, no child elements) and not self-closing
-        if (!constants_1.ALLOWED_EMPTY_ELEMENTS.has(tagName) && !el.children.length && !el.textContent?.trim()) {
+        if (!constants_1.ALLOWED_EMPTY_ELEMENTS.has(tagName) && !el.children.length && !((_a = el.textContent) === null || _a === void 0 ? void 0 : _a.trim())) {
             el.remove();
             processedCount++;
             return true;
@@ -928,7 +943,7 @@ function flattenWrapperElements(element, doc) {
         const childNodes = Array.from(el.childNodes);
         const hasOnlyInlineOrText = childNodes.length > 0 && childNodes.every(child => ((0, utils_1.isTextNode)(child)) ||
             ((0, utils_1.isElement)(child) && constants_1.INLINE_ELEMENTS.has(child.nodeName.toLowerCase())));
-        if (hasOnlyInlineOrText && el.textContent?.trim()) { // Ensure there's actual content
+        if (hasOnlyInlineOrText && ((_b = el.textContent) === null || _b === void 0 ? void 0 : _b.trim())) { // Ensure there's actual content
             const p = doc.createElement('p');
             // Move all children (including inline tags like <font>) to the new <p>
             while (el.firstChild) {
@@ -985,22 +1000,26 @@ function flattenWrapperElements(element, doc) {
     // Second pass: Process remaining wrapper elements from deepest to shallowest
     const processRemainingElements = () => {
         // Get all wrapper elements
-        const allElements = Array.from(element.querySelectorAll(constants_1.BLOCK_ELEMENTS_SELECTOR))
-            .sort((a, b) => {
-            // Count nesting depth
-            const getDepth = (el) => {
-                let depth = 0;
-                let parent = el.parentElement;
-                while (parent) {
-                    const parentTag = parent.tagName.toLowerCase();
-                    if (constants_1.BLOCK_ELEMENTS_SET.has(parentTag))
-                        depth++;
-                    parent = parent.parentElement;
-                }
-                return depth;
-            };
-            return getDepth(b) - getDepth(a); // Process deepest first
-        });
+        const allElements = Array.from(element.querySelectorAll(constants_1.BLOCK_ELEMENTS_SELECTOR));
+        // OPTIMIZED: Pre-calculate depths in a single pass using Map
+        // instead of calculating inside sort comparator (O(n log n) times)
+        const depthCache = new Map();
+        const getDepth = (el) => {
+            if (depthCache.has(el))
+                return depthCache.get(el);
+            let depth = 0;
+            let parent = el.parentElement;
+            while (parent) {
+                const parentTag = parent.tagName.toLowerCase();
+                if (constants_1.BLOCK_ELEMENTS_SET.has(parentTag))
+                    depth++;
+                parent = parent.parentElement;
+            }
+            depthCache.set(el, depth);
+            return depth;
+        };
+        // Sort by pre-calculated depth (deepest first)
+        allElements.sort((a, b) => getDepth(b) - getDepth(a));
         let modified = false;
         allElements.forEach(el => {
             if (processElement(el)) {
@@ -1030,7 +1049,10 @@ function flattenWrapperElements(element, doc) {
         });
         return modified;
     };
-    // Execute all passes until no more changes
+    // Execute all passes until no more changes or max iterations reached
+    // OPTIMIZED: Limit iterations to prevent runaway loops on deeply nested documents
+    let iterations = 0;
+    const MAX_ITERATIONS = 3;
     do {
         keepProcessing = false;
         if (processTopLevelElements())
@@ -1039,7 +1061,8 @@ function flattenWrapperElements(element, doc) {
             keepProcessing = true;
         if (finalCleanup())
             keepProcessing = true;
-    } while (keepProcessing);
+        iterations++;
+    } while (keepProcessing && iterations < MAX_ITERATIONS);
     const endTime = Date.now();
     (0, utils_1.logDebug)(_debug, 'Flattened wrapper elements:', {
         count: processedCount,

@@ -82,7 +82,7 @@ class GitHubExtractor extends _base_1.BaseExtractor {
             'a[aria-label*="profile"]'
         ]);
         const issueTimeElement = issueContainer.querySelector('relative-time');
-        const published = issueTimeElement?.getAttribute('datetime') || '';
+        const published = (issueTimeElement === null || issueTimeElement === void 0 ? void 0 : issueTimeElement.getAttribute('datetime')) || '';
         const issueBodyElement = issueContainer.querySelector('[data-testid="issue-body-viewer"] .markdown-body');
         if (!issueBodyElement)
             return { content: '', author, published };
@@ -107,7 +107,7 @@ class GitHubExtractor extends _base_1.BaseExtractor {
                 'a[href^="/"][data-hovercard-url*="/users/"]'
             ]);
             const timeElement = commentContainer.querySelector('relative-time');
-            const timestamp = timeElement?.getAttribute('datetime') || '';
+            const timestamp = (timeElement === null || timeElement === void 0 ? void 0 : timeElement.getAttribute('datetime')) || '';
             const date = timestamp ? new Date(timestamp).toISOString().split('T')[0] : '';
             const bodyElement = commentContainer.querySelector('.markdown-body');
             if (!bodyElement)
@@ -129,17 +129,19 @@ class GitHubExtractor extends _base_1.BaseExtractor {
             || this.document.querySelector('.timeline-comment');
     }
     getPRContent(prBody) {
-        const bodyEl = prBody?.querySelector('.comment-body.markdown-body')
+        var _a;
+        const bodyEl = (prBody === null || prBody === void 0 ? void 0 : prBody.querySelector('.comment-body.markdown-body'))
             || this.document.querySelector('.comment-body.markdown-body');
         const content = bodyEl ? this.cleanBodyContent(bodyEl) : '';
-        const authorEl = prBody?.querySelector('.author')
+        const authorEl = (prBody === null || prBody === void 0 ? void 0 : prBody.querySelector('.author'))
             || this.document.querySelector('.gh-header-meta .author');
-        const author = authorEl?.textContent?.trim() || '';
-        const timeEl = prBody?.querySelector('relative-time');
-        const published = timeEl?.getAttribute('datetime') || '';
+        const author = ((_a = authorEl === null || authorEl === void 0 ? void 0 : authorEl.textContent) === null || _a === void 0 ? void 0 : _a.trim()) || '';
+        const timeEl = prBody === null || prBody === void 0 ? void 0 : prBody.querySelector('relative-time');
+        const published = (timeEl === null || timeEl === void 0 ? void 0 : timeEl.getAttribute('datetime')) || '';
         return { content, author, published };
     }
     extractPRComments(prBody) {
+        var _a;
         // Find all comment containers: regular comments (.timeline-comment)
         // and code review comments (.review-comment)
         const allComments = Array.from(this.document.querySelectorAll('.timeline-comment, .review-comment'));
@@ -149,9 +151,9 @@ class GitHubExtractor extends _base_1.BaseExtractor {
             if (prBody && (comment === prBody || prBody.contains(comment)))
                 continue;
             const authorEl = comment.querySelector('.author');
-            const author = authorEl?.textContent?.trim() || '';
+            const author = ((_a = authorEl === null || authorEl === void 0 ? void 0 : authorEl.textContent) === null || _a === void 0 ? void 0 : _a.trim()) || '';
             const timeEl = comment.querySelector('relative-time');
-            const timestamp = timeEl?.getAttribute('datetime') || '';
+            const timestamp = (timeEl === null || timeEl === void 0 ? void 0 : timeEl.getAttribute('datetime')) || '';
             const date = timestamp ? new Date(timestamp).toISOString().split('T')[0] : '';
             const bodyEl = comment.querySelector('.comment-body.markdown-body');
             if (!bodyEl)
@@ -200,7 +202,7 @@ class GitHubExtractor extends _base_1.BaseExtractor {
                 return;
             // Extract language from wrapper class (e.g. "highlight-source-ts")
             const langMatch = wrapper.className.match(/highlight-source-(\w+)/);
-            const lang = langMatch?.[1] || '';
+            const lang = (langMatch === null || langMatch === void 0 ? void 0 : langMatch[1]) || '';
             // Use data-snippet-clipboard-copy-content if available (clean text),
             // otherwise fall back to textContent
             const content = wrapper.getAttribute('data-snippet-clipboard-copy-content')
@@ -218,13 +220,14 @@ class GitHubExtractor extends _base_1.BaseExtractor {
         return (0, dom_1.serializeHTML)(cleanBody).trim();
     }
     extractNumber() {
+        var _a;
         // Try URL first (most reliable)
         const urlMatch = this.url.match(/\/(issues|pull)\/(\d+)/);
         if (urlMatch)
             return urlMatch[2];
         // Fallback to HTML extraction
         const titleElement = this.document.querySelector('h1');
-        const titleMatch = titleElement?.textContent?.match(/#(\d+)/);
+        const titleMatch = (_a = titleElement === null || titleElement === void 0 ? void 0 : titleElement.textContent) === null || _a === void 0 ? void 0 : _a.match(/#(\d+)/);
         return titleMatch ? titleMatch[1] : '';
     }
     extractRepoInfo() {
@@ -238,13 +241,12 @@ class GitHubExtractor extends _base_1.BaseExtractor {
         return titleMatch ? { owner: titleMatch[1], repo: titleMatch[2] } : { owner: '', repo: '' };
     }
     createDescription(content) {
+        var _a;
         if (!content)
             return '';
         const tempDiv = this.document.createElement('div');
         tempDiv.appendChild((0, dom_1.parseHTML)(this.document, content));
-        return tempDiv.textContent?.trim()
-            .slice(0, 140)
-            .replace(/\s+/g, ' ') || '';
+        return ((_a = tempDiv.textContent) === null || _a === void 0 ? void 0 : _a.trim().slice(0, 140).replace(/\s+/g, ' ')) || '';
     }
 }
 exports.GitHubExtractor = GitHubExtractor;

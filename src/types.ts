@@ -34,6 +34,7 @@ export interface DebugInfo {
 export interface DefuddleResponse extends DefuddleMetadata {
 	content: string;
 	contentMarkdown?: string;
+	contentText?: string;
 	extractorType?: string;
 	metaTags?: MetaTagItem[];
 	debug?: DebugInfo;
@@ -63,6 +64,13 @@ export interface DefuddleOptions {
 	 * Defaults to false
 	 */
 	separateMarkdown?: boolean;
+
+	/**
+	 * Convert output to plain text using html-to-text
+	 * Can be a boolean (true = use defaults) or html-to-text options object
+	 * Defaults to false
+	 */
+	htmlToText?: boolean | HtmlToTextOptions;
 
 	/**
 	 * Remove elements matching exact selectors like ads, social buttons, etc
@@ -123,7 +131,16 @@ export interface DefuddleOptions {
 	 * CSS selector to use as main content element, bypassing auto-detection
 	 */
 	contentSelector?: string;
+
+	/**
+	 * CSS selectors to remove from the DOM before processing.
+	 * Useful for removing elements that interfere with content extraction.
+	 */
+	removeSelectors?: string[];
 }
+
+// Import type from html-to-text
+export type HtmlToTextOptions = import('html-to-text').HtmlToTextOptions;
 
 export interface ExtractorVariables {
 	[key: string]: string;

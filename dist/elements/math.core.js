@@ -9,7 +9,7 @@ const createCleanMathEl = (doc, mathData, latex, isBlock) => {
     cleanMathEl.setAttribute('display', isBlock ? 'block' : 'inline');
     cleanMathEl.setAttribute('data-latex', latex || '');
     // First try to use existing MathML content
-    if (mathData?.mathml) {
+    if (mathData === null || mathData === void 0 ? void 0 : mathData.mathml) {
         const fragment = (0, dom_1.parseHTML)(doc, mathData.mathml);
         const mathContent = fragment.querySelector('math');
         if (mathContent) {

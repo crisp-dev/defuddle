@@ -1150,21 +1150,26 @@ function flattenWrapperElements(element: Element, doc: Document): void {
 	// Second pass: Process remaining wrapper elements from deepest to shallowest
 	const processRemainingElements = () => {
 		// Get all wrapper elements
-		const allElements = Array.from(element.querySelectorAll(BLOCK_ELEMENTS_SELECTOR))
-			.sort((a, b) => {
-				// Count nesting depth
-				const getDepth = (el: Element): number => {
-					let depth = 0;
-					let parent = el.parentElement;
-					while (parent) {
-						const parentTag = parent.tagName.toLowerCase();
-						if (BLOCK_ELEMENTS_SET.has(parentTag)) depth++;
-						parent = parent.parentElement;
-					}
-					return depth;
-				};
-				return getDepth(b) - getDepth(a); // Process deepest first
-			});
+		const allElements = Array.from(element.querySelectorAll(BLOCK_ELEMENTS_SELECTOR));
+		
+		// OPTIMIZED: Pre-calculate depths in a single pass using Map
+		// instead of calculating inside sort comparator (O(n log n) times)
+		const depthCache = new Map<Element, number>();
+		const getDepth = (el: Element): number => {
+			if (depthCache.has(el)) return depthCache.get(el)!;
+			let depth = 0;
+			let parent = el.parentElement;
+			while (parent) {
+				const parentTag = parent.tagName.toLowerCase();
+				if (BLOCK_ELEMENTS_SET.has(parentTag)) depth++;
+				parent = parent.parentElement;
+			}
+			depthCache.set(el, depth);
+			return depth;
+		};
+		
+		// Sort by pre-calculated depth (deepest first)
+		allElements.sort((a, b) => getDepth(b) - getDepth(a));
 
 		let modified = false;
 		allElements.forEach(el => {
@@ -1199,13 +1204,17 @@ function flattenWrapperElements(element: Element, doc: Document): void {
 		return modified;
 	};
 
-	// Execute all passes until no more changes
+	// Execute all passes until no more changes or max iterations reached
+	// OPTIMIZED: Limit iterations to prevent runaway loops on deeply nested documents
+	let iterations = 0;
+	const MAX_ITERATIONS = 3;
 	do {
 		keepProcessing = false;
 		if (processTopLevelElements()) keepProcessing = true;
 		if (processRemainingElements()) keepProcessing = true;
 		if (finalCleanup()) keepProcessing = true;
-	} while (keepProcessing);
+		iterations++;
+	} while (keepProcessing && iterations < MAX_ITERATIONS);
 
 	const endTime = Date.now();
 	logDebug(_debug, 'Flattened wrapper elements:', {

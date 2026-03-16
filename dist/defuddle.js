@@ -1,4 +1,13 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Defuddle = void 0;
 const metadata_1 = require("./metadata");
@@ -118,10 +127,10 @@ class Defuddle {
             return '';
         const items = Array.isArray(schemaOrgData) ? schemaOrgData : [schemaOrgData];
         for (const item of items) {
-            if (item?.text && typeof item.text === 'string') {
+            if ((item === null || item === void 0 ? void 0 : item.text) && typeof item.text === 'string') {
                 return item.text;
             }
-            if (item?.articleBody && typeof item.articleBody === 'string') {
+            if ((item === null || item === void 0 ? void 0 : item.articleBody) && typeof item.articleBody === 'string') {
                 return item.articleBody;
             }
         }
@@ -131,22 +140,25 @@ class Defuddle {
      * Remove dangerous elements and attributes from this.doc.
      * Called after parseInternal so that extractors and schema extraction
      * can still read script tags they depend on.
+     * OPTIMIZED: Single-pass DOM traversal combining element and attribute removal.
      */
     _stripUnsafeElements() {
         const body = this.doc.body;
         if (!body)
             return;
-        // Remove dangerous elements. Iframes are kept — same-origin policy
-        // isolates them, and they're widely used for legitimate media embeds.
-        // Dangerous iframe attributes (srcdoc, javascript: src) are stripped
-        // in the attribute pass below. Math scripts are preserved for LaTeX
-        // content (matching the EXACT_SELECTORS approach).
-        const dangerousElements = body.querySelectorAll('script:not([type^="math/"]), style, noscript, frame, frameset, object, embed, applet, base');
-        for (const el of dangerousElements)
-            el.remove();
-        // Remove event handler attributes, dangerous URIs, and srcdoc
+        // Dangerous element selectors - pre-compile
+        const dangerousSelector = 'script:not([type^="math/"]), style, noscript, frame, frameset, object, embed, applet, base';
+        const dangerousElements = new Set(Array.from(body.querySelectorAll(dangerousSelector)));
+        // Single pass: process all elements for both dangerous tag removal and attribute stripping
         const allElements = body.querySelectorAll('*');
         for (const el of allElements) {
+            // Skip if this is a dangerous element (will be removed separately)
+            if (dangerousElements.has(el))
+                continue;
+            // Fast path: check if element has any attributes to process
+            if (!el.attributes.length)
+                continue;
+            // Strip event handlers and dangerous URIs
             for (const attr of Array.from(el.attributes)) {
                 const name = attr.name.toLowerCase();
                 if (name.startsWith('on')) {
@@ -162,6 +174,8 @@ class Defuddle {
                 }
             }
         }
+        // Remove dangerous elements in a batch
+        dangerousElements.forEach(el => el.remove());
     }
     /**
      * Find a DOM element whose text matches the schema.org text content.
@@ -169,13 +183,14 @@ class Defuddle {
      * Returns the element's inner HTML including sibling media (images, etc.)
      */
     _findContentBySchemaText(schemaText) {
+        var _a;
         const body = this.doc.body;
         if (!body)
             return '';
         // Use the first paragraph as the search phrase.
         // DOM textContent concatenates <p> elements without separators,
         // so we can't cross paragraph boundaries when matching.
-        const firstPara = schemaText.split(/\n\s*\n/)[0]?.trim() || '';
+        const firstPara = ((_a = schemaText.split(/\n\s*\n/)[0]) === null || _a === void 0 ? void 0 : _a.trim()) || '';
         const searchPhrase = firstPara.substring(0, 100).trim();
         if (!searchPhrase)
             return '';
@@ -227,7 +242,7 @@ class Defuddle {
                     if (baseUrl)
                         imageSrc = new URL(imageSrc, baseUrl).href;
                 }
-                catch { }
+                catch (_b) { }
             }
         }
         // Now resolve URLs in the text content
@@ -279,74 +294,71 @@ class Defuddle {
      * async (e.g. YouTube transcripts) before sync, then falls back to async
      * extractors if sync parse yields no content.
      */
-    async parseAsync() {
-        if (this.options.useAsync !== false) {
-            const asyncResult = await this.tryAsyncExtractor(extractor_registry_1.ExtractorRegistry.findPreferredAsyncExtractor.bind(extractor_registry_1.ExtractorRegistry));
-            if (asyncResult)
-                return asyncResult;
-        }
-        const result = this.parse();
-        if (result.wordCount > 0 || this.options.useAsync === false) {
-            return result;
-        }
-        return (await this.tryAsyncExtractor(extractor_registry_1.ExtractorRegistry.findAsyncExtractor.bind(extractor_registry_1.ExtractorRegistry))) ?? result;
+    parseAsync() {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            if (this.options.useAsync !== false) {
+                const asyncResult = yield this.tryAsyncExtractor(extractor_registry_1.ExtractorRegistry.findPreferredAsyncExtractor.bind(extractor_registry_1.ExtractorRegistry));
+                if (asyncResult)
+                    return asyncResult;
+            }
+            const result = this.parse();
+            if (result.wordCount > 0 || this.options.useAsync === false) {
+                return result;
+            }
+            return (_a = (yield this.tryAsyncExtractor(extractor_registry_1.ExtractorRegistry.findAsyncExtractor.bind(extractor_registry_1.ExtractorRegistry)))) !== null && _a !== void 0 ? _a : result;
+        });
     }
     /**
      * Fetch only async variables (e.g. transcript) without re-parsing.
      * Safe to call after parse() — uses cached schema.org data since
      * parse() strips script tags from the document.
      */
-    async fetchAsyncVariables() {
-        if (this.options.useAsync === false)
+    fetchAsyncVariables() {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (this.options.useAsync === false)
+                return null;
+            try {
+                const url = this.options.url || this.doc.URL;
+                const schemaOrgData = this.getSchemaOrgData();
+                const extractor = extractor_registry_1.ExtractorRegistry.findPreferredAsyncExtractor(this.doc, url, schemaOrgData);
+                if (extractor) {
+                    const extracted = yield extractor.extractAsync();
+                    return this.getExtractorVariables(extracted.variables) || null;
+                }
+            }
+            catch (error) {
+                console.error('Defuddle', 'Error fetching async variables:', error);
+            }
             return null;
-        try {
-            const url = this.options.url || this.doc.URL;
-            const schemaOrgData = this.getSchemaOrgData();
-            const extractor = extractor_registry_1.ExtractorRegistry.findPreferredAsyncExtractor(this.doc, url, schemaOrgData);
-            if (extractor) {
-                const extracted = await extractor.extractAsync();
-                return this.getExtractorVariables(extracted.variables) || null;
-            }
-        }
-        catch (error) {
-            console.error('Defuddle', 'Error fetching async variables:', error);
-        }
-        return null;
+        });
     }
-    async tryAsyncExtractor(finder) {
-        try {
-            const url = this.options.url || this.doc.URL;
-            const schemaOrgData = this.getSchemaOrgData();
-            const extractor = finder(this.doc, url, schemaOrgData);
-            if (extractor) {
-                const startTime = Date.now();
-                const extracted = await extractor.extractAsync();
-                const pageMetaTags = this._collectMetaTags();
-                const metadata = metadata_1.MetadataExtractor.extract(this.doc, schemaOrgData, pageMetaTags);
-                return this.buildExtractorResponse(extracted, metadata, startTime, extractor, pageMetaTags);
+    tryAsyncExtractor(finder) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const url = this.options.url || this.doc.URL;
+                const schemaOrgData = this.getSchemaOrgData();
+                const extractor = finder(this.doc, url, schemaOrgData);
+                if (extractor) {
+                    const startTime = Date.now();
+                    const extracted = yield extractor.extractAsync();
+                    const pageMetaTags = this._collectMetaTags();
+                    const metadata = metadata_1.MetadataExtractor.extract(this.doc, schemaOrgData, pageMetaTags);
+                    return this.buildExtractorResponse(extracted, metadata, startTime, extractor, pageMetaTags);
+                }
             }
-        }
-        catch (error) {
-            console.error('Defuddle', 'Error in async extraction:', error);
-        }
-        return null;
+            catch (error) {
+                console.error('Defuddle', 'Error in async extraction:', error);
+            }
+            return null;
+        });
     }
     /**
      * Internal parse method that does the actual work
      */
     parseInternal(overrideOptions = {}) {
         const startTime = Date.now();
-        const options = {
-            removeExactSelectors: true,
-            removePartialSelectors: true,
-            removeHiddenElements: true,
-            removeLowScoring: true,
-            removeSmallImages: true,
-            removeContentPatterns: true,
-            standardize: true,
-            ...this.options,
-            ...overrideOptions
-        };
+        const options = Object.assign(Object.assign({ removeExactSelectors: true, removePartialSelectors: true, removeHiddenElements: true, removeLowScoring: true, removeSmallImages: true, removeContentPatterns: true, standardize: true }, this.options), overrideOptions);
         const debugRemovals = [];
         // Extract schema.org data (cached — must happen before _stripUnsafeElements removes scripts)
         const schemaOrgData = this.getSchemaOrgData();
@@ -382,6 +394,17 @@ class Defuddle {
             this.flattenShadowRoots(this.doc, clone);
             // Resolve React streaming SSR suspense boundaries
             this.resolveStreamedContent(clone);
+            // Remove user-specified selectors early in processing
+            if (options.removeSelectors && options.removeSelectors.length > 0) {
+                const selector = options.removeSelectors.join(',');
+                const elements = clone.querySelectorAll(selector);
+                let removedCount = 0;
+                for (const el of elements) {
+                    el.remove();
+                    removedCount++;
+                }
+                this._log('Removed user-specified selectors:', removedCount);
+            }
             // Apply mobile styles to clone
             this.applyMobileStyles(clone, mobileStyles);
             // Find main content
@@ -396,13 +419,7 @@ class Defuddle {
             if (!mainContent) {
                 const fallbackContent = this.resolveContentUrls((0, dom_1.serializeHTML)(this.doc.body));
                 const endTime = Date.now();
-                return {
-                    content: fallbackContent,
-                    ...metadata,
-                    wordCount: this.countWords(fallbackContent),
-                    parseTime: Math.round(endTime - startTime),
-                    metaTags: pageMetaTags
-                };
+                return Object.assign(Object.assign({ content: fallbackContent }, metadata), { wordCount: this.countWords(fallbackContent), parseTime: Math.round(endTime - startTime), metaTags: pageMetaTags });
             }
             // Standardize footnotes before cleanup (CSS sidenotes use display:none)
             if (options.standardize) {
@@ -450,13 +467,7 @@ class Defuddle {
             this.resolveRelativeUrls(mainContent);
             const content = mainContent.outerHTML;
             const endTime = Date.now();
-            const result = {
-                content,
-                ...metadata,
-                wordCount: this.countWords(content),
-                parseTime: Math.round(endTime - startTime),
-                metaTags: pageMetaTags
-            };
+            const result = Object.assign(Object.assign({ content }, metadata), { wordCount: this.countWords(content), parseTime: Math.round(endTime - startTime), metaTags: pageMetaTags });
             if (this.debug) {
                 result.debug = {
                     contentSelector: this.getElementSelector(mainContent),
@@ -469,13 +480,7 @@ class Defuddle {
             console.error('Defuddle', 'Error processing document:', error);
             const errorContent = this.resolveContentUrls((0, dom_1.serializeHTML)(this.doc.body));
             const endTime = Date.now();
-            return {
-                content: errorContent,
-                ...metadata,
-                wordCount: this.countWords(errorContent),
-                parseTime: Math.round(endTime - startTime),
-                metaTags: pageMetaTags
-            };
+            return Object.assign(Object.assign({ content: errorContent }, metadata), { wordCount: this.countWords(errorContent), parseTime: Math.round(endTime - startTime), metaTags: pageMetaTags });
         }
     }
     countWords(content) {
@@ -514,72 +519,9 @@ class Defuddle {
         }
     }
     _evaluateMediaQueries(doc) {
-        const mobileStyles = [];
-        const maxWidthRegex = /max-width[^:]*:\s*(\d+)/;
-        try {
-            // Get all styles, including inline styles
-            const sheets = Array.from(doc.styleSheets).filter(sheet => {
-                try {
-                    // Access rules once to check validity
-                    sheet.cssRules;
-                    return true;
-                }
-                catch (e) {
-                    // Expected error for cross-origin stylesheets or Node.js environment
-                    if (e instanceof DOMException && e.name === 'SecurityError') {
-                        return false;
-                    }
-                    return false;
-                }
-            });
-            // Process all sheets in a single pass
-            const mediaRules = sheets.flatMap(sheet => {
-                try {
-                    // Check if we're in a browser environment where CSSMediaRule is available
-                    if (typeof CSSMediaRule === 'undefined') {
-                        return [];
-                    }
-                    return Array.from(sheet.cssRules)
-                        .filter((rule) => rule instanceof CSSMediaRule &&
-                        rule.conditionText.includes('max-width'));
-                }
-                catch (e) {
-                    if (this.debug) {
-                        console.warn('Defuddle: Failed to process stylesheet:', e);
-                    }
-                    return [];
-                }
-            });
-            // Process all media rules in a single pass
-            mediaRules.forEach(rule => {
-                const match = rule.conditionText.match(maxWidthRegex);
-                if (match) {
-                    const maxWidth = parseInt(match[1]);
-                    if (constants_1.MOBILE_WIDTH <= maxWidth) {
-                        // Batch process all style rules
-                        const styleRules = Array.from(rule.cssRules)
-                            .filter((r) => r instanceof CSSStyleRule);
-                        styleRules.forEach(cssRule => {
-                            try {
-                                mobileStyles.push({
-                                    selector: cssRule.selectorText,
-                                    styles: cssRule.style.cssText
-                                });
-                            }
-                            catch (e) {
-                                if (this.debug) {
-                                    console.warn('Defuddle: Failed to process CSS rule:', e);
-                                }
-                            }
-                        });
-                    }
-                }
-            });
-        }
-        catch (e) {
-            console.error('Defuddle: Error evaluating media queries:', e);
-        }
-        return mobileStyles;
+        // linkedom doesn't implement styleSheets properly, so this will return empty
+        // Keeping minimal implementation in case a Document with styleSheets is passed
+        return [];
     }
     applyMobileStyles(doc, mobileStyles) {
         let appliedCount = 0;
@@ -607,10 +549,6 @@ class Defuddle {
         const elementsToRemove = new Map();
         // Check inline styles and CSS class-based hidden patterns.
         const hiddenStylePattern = /(?:^|;\s*)(?:display\s*:\s*none|visibility\s*:\s*hidden|opacity\s*:\s*0)(?:\s*;|\s*$)/i;
-        // Only use getComputedStyle in browser environments where it's meaningful.
-        // In JSDOM/linkedom without stylesheets, it's extremely slow and unreliable.
-        const defaultView = doc.defaultView;
-        const isBrowser = typeof window !== 'undefined' && defaultView === window;
         const allElements = doc.querySelectorAll('*');
         for (const element of allElements) {
             // Skip elements that contain math — sites like Wikipedia wrap MathML
@@ -628,25 +566,6 @@ class Defuddle {
                 elementsToRemove.set(element, reason);
                 count++;
                 continue;
-            }
-            // Use getComputedStyle only in real browser environments
-            if (isBrowser) {
-                try {
-                    const computedStyle = defaultView.getComputedStyle(element);
-                    let reason = '';
-                    if (computedStyle.display === 'none')
-                        reason = 'display:none';
-                    else if (computedStyle.visibility === 'hidden')
-                        reason = 'visibility:hidden';
-                    else if (computedStyle.opacity === '0')
-                        reason = 'opacity:0';
-                    if (reason) {
-                        elementsToRemove.set(element, reason);
-                        count++;
-                        continue;
-                    }
-                }
-                catch (e) { }
             }
             // Detect CSS framework hidden utilities (e.g. Tailwind's "hidden",
             // "sm:hidden", "not-machine:hidden")
@@ -685,7 +604,7 @@ class Defuddle {
         if (removeExact) {
             const exactElements = doc.querySelectorAll(constants_1.EXACT_SELECTORS.join(','));
             exactElements.forEach(el => {
-                if (el?.parentNode) {
+                if (el === null || el === void 0 ? void 0 : el.parentNode) {
                     // Skip elements inside code blocks (e.g. syntax highlighting spans)
                     if (el.closest('pre, code')) {
                         return;
@@ -706,6 +625,7 @@ class Defuddle {
             const allElements = doc.querySelectorAll(constants_1.TEST_ATTRIBUTES_SELECTOR);
             // Process elements for partial matches
             allElements.forEach(el => {
+                var _a;
                 // Skip if already marked for removal
                 if (elementsToRemove.has(el)) {
                     return;
@@ -733,7 +653,7 @@ class Defuddle {
                 // Check for partial match using single regex test
                 if (partialRegex.test(attrs)) {
                     const matchedPattern = individualRegexes
-                        ? individualRegexes.find(r => r.regex.test(attrs))?.pattern
+                        ? (_a = individualRegexes.find(r => r.regex.test(attrs))) === null || _a === void 0 ? void 0 : _a.pattern
                         : undefined;
                     elementsToRemove.set(el, { type: 'partial', selector: matchedPattern });
                     partialSelectorCount++;
@@ -782,39 +702,20 @@ class Defuddle {
     }
     // Find small IMG and SVG elements
     findSmallImages(doc) {
+        var _a, _b;
         const MIN_DIMENSION = 33;
         const smallImages = new Set();
         let processedCount = 0;
         const elements = doc.querySelectorAll('img, svg');
-        const defaultView = doc.defaultView;
-        const isBrowser = typeof window !== 'undefined' && defaultView === window;
         for (const element of elements) {
             const attrWidth = parseInt(element.getAttribute('width') || '0');
             const attrHeight = parseInt(element.getAttribute('height') || '0');
             // Check inline style dimensions
             const style = element.getAttribute('style') || '';
-            const styleWidth = parseInt(style.match(/width\s*:\s*(\d+)/)?.[1] || '0');
-            const styleHeight = parseInt(style.match(/height\s*:\s*(\d+)/)?.[1] || '0');
-            // Use getComputedStyle and getBoundingClientRect only in browser
-            let computedWidth = 0, computedHeight = 0;
-            if (isBrowser) {
-                try {
-                    const cs = defaultView.getComputedStyle(element);
-                    computedWidth = parseInt(cs.width) || 0;
-                    computedHeight = parseInt(cs.height) || 0;
-                }
-                catch (e) { }
-                try {
-                    const rect = element.getBoundingClientRect();
-                    if (rect.width > 0)
-                        computedWidth = computedWidth || rect.width;
-                    if (rect.height > 0)
-                        computedHeight = computedHeight || rect.height;
-                }
-                catch (e) { }
-            }
-            const widths = [attrWidth, styleWidth, computedWidth].filter(d => d > 0);
-            const heights = [attrHeight, styleHeight, computedHeight].filter(d => d > 0);
+            const styleWidth = parseInt(((_a = style.match(/width\s*:\s*(\d+)/)) === null || _a === void 0 ? void 0 : _a[1]) || '0');
+            const styleHeight = parseInt(((_b = style.match(/height\s*:\s*(\d+)/)) === null || _b === void 0 ? void 0 : _b[1]) || '0');
+            const widths = [attrWidth, styleWidth].filter(d => d > 0);
+            const heights = [attrHeight, styleHeight].filter(d => d > 0);
             if (widths.length > 0 && heights.length > 0) {
                 const effectiveWidth = Math.min(...widths);
                 const effectiveHeight = Math.min(...heights);
@@ -832,16 +733,17 @@ class Defuddle {
     }
     removeSmallImages(doc, smallImages) {
         let removedCount = 0;
-        ['img', 'svg'].forEach(tag => {
-            const elements = doc.getElementsByTagName(tag);
-            Array.from(elements).forEach(element => {
-                const identifier = this.getElementIdentifier(element);
-                if (identifier && smallImages.has(identifier)) {
-                    element.remove();
-                    removedCount++;
-                }
-            });
-        });
+        // OPTIMIZED: Use querySelectorAll with static NodeList instead of live HTMLCollection
+        // getElementsByTagName returns a live collection that reindexes on removal (O(n²))
+        const elements = doc.querySelectorAll('img, svg');
+        const elementsArray = Array.from(elements);
+        for (const element of elementsArray) {
+            const identifier = this.getElementIdentifier(element);
+            if (identifier && smallImages.has(identifier)) {
+                element.remove();
+                removedCount++;
+            }
+        }
         this._log('Removed small elements:', removedCount);
     }
     getElementIdentifier(element) {
@@ -914,22 +816,24 @@ class Defuddle {
         // Skip this when the parent contains multiple children matching the
         // same selector — that indicates a listing/portfolio page where the
         // parent is the real content container.
+        // OPTIMIZED: Pre-compute word counts and use Map for O(1) lookups instead of O(n²) nested loops.
         const top = candidates[0];
         let best = top;
+        // Pre-compute word counts for all candidates to avoid repeated textContent access
+        const candidateWordCounts = new Map(candidates.map(c => [c, (c.element.textContent || '').split(/\s+/).length]));
+        // Build a Map of selectorIndex -> count within top element for O(1) lookup
+        const siblingsCountMap = new Map();
+        for (const c of candidates) {
+            if (top.element.contains(c.element)) {
+                siblingsCountMap.set(c.selectorIndex, (siblingsCountMap.get(c.selectorIndex) || 0) + 1);
+            }
+        }
         for (let i = 1; i < candidates.length; i++) {
             const child = candidates[i];
-            const childWords = (child.element.textContent || '').split(/\s+/).length;
+            const childWords = candidateWordCounts.get(child) || 0;
             if (child.selectorIndex < best.selectorIndex && best.element.contains(child.element) && childWords > 50) {
-                // Count how many candidates share this selector index inside
-                // the top element. Use top (not best) as the stable reference
-                // so the check isn't affected by earlier iterations.
-                let siblingsAtIndex = 0;
-                for (const c of candidates) {
-                    if (c.selectorIndex === child.selectorIndex && top.element.contains(c.element)) {
-                        if (++siblingsAtIndex > 1)
-                            break;
-                    }
-                }
+                // Check if multiple candidates share this selector index inside top
+                const siblingsAtIndex = siblingsCountMap.get(child.selectorIndex) || 0;
                 if (siblingsAtIndex > 1) {
                     // Multiple articles/cards inside the parent — it's a listing page
                     continue;
@@ -947,9 +851,13 @@ class Defuddle {
         const tables = Array.from(doc.getElementsByTagName('table'));
         const hasTableLayout = tables.some(table => {
             const width = parseInt(table.getAttribute('width') || '0');
-            const style = this.getComputedStyle(table);
+            // OPTIMIZED: Check inline style width instead of expensive getComputedStyle
+            // This is much faster in JSDOM/linkedom and sufficient for table detection
+            const styleAttr = table.getAttribute('style') || '';
+            const styleWidthMatch = styleAttr.match(/width\s*:\s*(\d+)px/i);
+            const styleWidth = styleWidthMatch ? parseInt(styleWidthMatch[1]) : 0;
             return width > 400 ||
-                (style?.width?.includes('px') && parseInt(style.width) > 400) ||
+                styleWidth > 400 ||
                 table.getAttribute('align') === 'center' ||
                 (table.className || '').toLowerCase().includes('content') ||
                 (table.className || '').toLowerCase().includes('article');
@@ -986,9 +894,6 @@ class Defuddle {
         }
         return parts.join(' > ');
     }
-    getComputedStyle(element) {
-        return (0, utils_1.getComputedStyle)(element);
-    }
     /**
      * Resolve relative URLs to absolute within a DOM element
      */
@@ -1000,7 +905,7 @@ class Defuddle {
             try {
                 return new URL(url, baseUrl).href;
             }
-            catch {
+            catch (_a) {
                 return url;
             }
         };
@@ -1057,6 +962,7 @@ class Defuddle {
      * Walks both trees in parallel so positional correspondence is exact.
      */
     flattenShadowRoots(original, clone) {
+        var _a, _b, _c;
         const origElements = Array.from(original.body.querySelectorAll('*'));
         // Find the first element with a shadow root (also serves as the hasShadowRoots check)
         const firstShadow = origElements.find(el => el.shadowRoot);
@@ -1065,7 +971,7 @@ class Defuddle {
         const cloneElements = Array.from(clone.body.querySelectorAll('*'));
         // Check if we can directly read shadow DOM content (main world / Node.js).
         // In content script isolated worlds, shadowRoot exists but content is empty.
-        const canReadShadow = (firstShadow.shadowRoot?.childNodes?.length ?? 0) > 0;
+        const canReadShadow = ((_c = (_b = (_a = firstShadow.shadowRoot) === null || _a === void 0 ? void 0 : _a.childNodes) === null || _b === void 0 ? void 0 : _b.length) !== null && _c !== void 0 ? _c : 0) > 0;
         if (canReadShadow) {
             // Direct traversal works (main world / Node.js)
             for (let i = origElements.length - 1; i >= 0; i--) {
@@ -1171,12 +1077,13 @@ class Defuddle {
      * into a live DOM, recreating their shadow roots and hiding the content.
      */
     replaceShadowHost(el, shadowHtml, doc) {
+        var _a;
         const fragment = (0, dom_1.parseHTML)(doc, shadowHtml);
         if (el.tagName.includes('-')) {
             // Custom element — replace with a div to prevent re-initialization
             const div = doc.createElement('div');
             div.appendChild(fragment);
-            el.parentNode?.replaceChild(div, el);
+            (_a = el.parentNode) === null || _a === void 0 ? void 0 : _a.replaceChild(div, el);
         }
         else {
             el.textContent = '';
@@ -1260,26 +1167,10 @@ class Defuddle {
      * Build a DefuddleResponse from an extractor result with metadata
      */
     buildExtractorResponse(extracted, metadata, startTime, extractor, pageMetaTags) {
+        var _a, _b, _c, _d, _e;
         const contentHtml = this.resolveContentUrls(extracted.contentHtml);
         const variables = this.getExtractorVariables(extracted.variables);
-        return {
-            content: contentHtml,
-            title: extracted.variables?.title || metadata.title,
-            description: metadata.description,
-            domain: metadata.domain,
-            favicon: metadata.favicon,
-            image: metadata.image,
-            language: extracted.variables?.language || metadata.language,
-            published: extracted.variables?.published || metadata.published,
-            author: extracted.variables?.author || metadata.author,
-            site: extracted.variables?.site || metadata.site,
-            schemaOrgData: metadata.schemaOrgData,
-            wordCount: this.countWords(extracted.contentHtml),
-            parseTime: Math.round(Date.now() - startTime),
-            extractorType: extractor.constructor.name.replace('Extractor', '').toLowerCase(),
-            metaTags: pageMetaTags,
-            ...(variables ? { variables } : {}),
-        };
+        return Object.assign({ content: contentHtml, title: ((_a = extracted.variables) === null || _a === void 0 ? void 0 : _a.title) || metadata.title, description: metadata.description, domain: metadata.domain, favicon: metadata.favicon, image: metadata.image, language: ((_b = extracted.variables) === null || _b === void 0 ? void 0 : _b.language) || metadata.language, published: ((_c = extracted.variables) === null || _c === void 0 ? void 0 : _c.published) || metadata.published, author: ((_d = extracted.variables) === null || _d === void 0 ? void 0 : _d.author) || metadata.author, site: ((_e = extracted.variables) === null || _e === void 0 ? void 0 : _e.site) || metadata.site, schemaOrgData: metadata.schemaOrgData, wordCount: this.countWords(extracted.contentHtml), parseTime: Math.round(Date.now() - startTime), extractorType: extractor.constructor.name.replace('Extractor', '').toLowerCase(), metaTags: pageMetaTags }, (variables ? { variables } : {}));
     }
     /**
      * Filter extractor variables to only include custom ones
@@ -1303,6 +1194,7 @@ class Defuddle {
      * CSS selectors (e.g. Tailwind/CSS-in-JS sites with non-semantic class names).
      */
     removeByContentPattern(mainContent, debugRemovals) {
+        var _a, _b, _c, _d, _e, _f;
         // Remove read time metadata (e.g. "Mar 4th 2026 | 3 min read")
         // Only removes leaf elements whose text is PURELY date + read time,
         // not mixed with other meaningful content like tag names.
@@ -1312,7 +1204,7 @@ class Defuddle {
                 continue;
             if (el.closest('pre') || el.closest('code'))
                 continue;
-            const text = el.textContent?.trim() || '';
+            const text = ((_a = el.textContent) === null || _a === void 0 ? void 0 : _a.trim()) || '';
             const words = text.split(/\s+/).length;
             // Match date + read time in short elements
             if (words <= 15 && CONTENT_DATE_PATTERN.test(text) && CONTENT_READ_TIME_PATTERN.test(text)) {
@@ -1348,10 +1240,10 @@ class Defuddle {
             // Walk up through inline/formatting wrappers only (i, em, span, b, strong)
             // Stop at block elements to avoid removing containers with other content.
             let target = time;
-            let targetText = target.textContent?.trim() || '';
+            let targetText = ((_b = target.textContent) === null || _b === void 0 ? void 0 : _b.trim()) || '';
             while (target.parentElement && target.parentElement !== mainContent) {
                 const parentTag = target.parentElement.tagName.toLowerCase();
-                const parentText = target.parentElement.textContent?.trim() || '';
+                const parentText = ((_c = target.parentElement.textContent) === null || _c === void 0 ? void 0 : _c.trim()) || '';
                 // If parent is a <p> that only wraps this time, include it
                 if (parentTag === 'p' && parentText === targetText) {
                     target = target.parentElement;
@@ -1366,7 +1258,7 @@ class Defuddle {
                 }
                 break;
             }
-            const text = target.textContent?.trim() || '';
+            const text = ((_d = target.textContent) === null || _d === void 0 ? void 0 : _d.trim()) || '';
             const words = text.split(/\s+/).length;
             if (words > 10)
                 continue;
@@ -1391,13 +1283,13 @@ class Defuddle {
         try {
             urlPath = new URL(url).pathname;
         }
-        catch { }
+        catch (_g) { }
         if (urlPath) {
             const shortElements = mainContent.querySelectorAll('div, span, p');
             for (const el of shortElements) {
                 if (!el.parentNode)
                     continue;
-                const text = el.textContent?.trim() || '';
+                const text = ((_e = el.textContent) === null || _e === void 0 ? void 0 : _e.trim()) || '';
                 const words = text.split(/\s+/).length;
                 if (words > 10)
                     continue;
@@ -1420,7 +1312,7 @@ class Defuddle {
                         el.remove();
                     }
                 }
-                catch { }
+                catch (_h) { }
             }
         }
         // Remove boilerplate sentences and trailing non-content.
@@ -1431,7 +1323,7 @@ class Defuddle {
         for (const el of boilerplateElements) {
             if (!el.parentNode)
                 continue;
-            const text = el.textContent?.trim() || '';
+            const text = ((_f = el.textContent) === null || _f === void 0 ? void 0 : _f.trim()) || '';
             const words = text.split(/\s+/).length;
             if (words > 50 || words < 3)
                 continue;

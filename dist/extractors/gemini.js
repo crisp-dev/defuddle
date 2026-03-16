@@ -61,11 +61,12 @@ class GeminiExtractor extends _conversation_1.ConversationExtractor {
         const browseItems = this.document.querySelectorAll('browse-item');
         if (browseItems && browseItems.length > 0) {
             browseItems.forEach(item => {
+                var _a, _b, _c, _d;
                 const link = item.querySelector('a');
                 if (link instanceof HTMLAnchorElement) {
                     const url = link.href;
-                    const domain = link.querySelector('.domain')?.textContent?.trim() || '';
-                    const title = link.querySelector('.title')?.textContent?.trim() || '';
+                    const domain = ((_b = (_a = link.querySelector('.domain')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim()) || '';
+                    const title = ((_d = (_c = link.querySelector('.title')) === null || _c === void 0 ? void 0 : _c.textContent) === null || _d === void 0 ? void 0 : _d.trim()) || '';
                     if (url && (domain || title)) {
                         this.footnotes.push({
                             url,
@@ -80,8 +81,9 @@ class GeminiExtractor extends _conversation_1.ConversationExtractor {
         return this.footnotes;
     }
     getMetadata() {
+        var _a;
         const title = this.getTitle();
-        const messageCount = this.messageCount ?? this.extractMessages().length;
+        const messageCount = (_a = this.messageCount) !== null && _a !== void 0 ? _a : this.extractMessages().length;
         return {
             title,
             site: 'Gemini',
@@ -91,15 +93,16 @@ class GeminiExtractor extends _conversation_1.ConversationExtractor {
         };
     }
     getTitle() {
-        const pageTitle = this.document.title?.trim();
+        var _a, _b, _c, _d, _e;
+        const pageTitle = (_a = this.document.title) === null || _a === void 0 ? void 0 : _a.trim();
         if (pageTitle && pageTitle !== 'Gemini' && !pageTitle.includes('Gemini')) {
             return pageTitle;
         }
-        const researchTitle = this.document.querySelector('.title-text')?.textContent?.trim();
+        const researchTitle = (_c = (_b = this.document.querySelector('.title-text')) === null || _b === void 0 ? void 0 : _b.textContent) === null || _c === void 0 ? void 0 : _c.trim();
         if (researchTitle) {
             return researchTitle;
         }
-        const firstUserQuery = this.conversationContainers?.item(0)?.querySelector('.query-text');
+        const firstUserQuery = (_e = (_d = this.conversationContainers) === null || _d === void 0 ? void 0 : _d.item(0)) === null || _e === void 0 ? void 0 : _e.querySelector('.query-text');
         if (firstUserQuery) {
             const text = firstUserQuery.textContent || '';
             return text.length > 50 ? text.slice(0, 50) + '...' : text;

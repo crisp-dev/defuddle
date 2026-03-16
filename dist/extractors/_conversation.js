@@ -9,6 +9,7 @@ class ConversationExtractor extends _base_1.BaseExtractor {
         return [];
     }
     extract() {
+        var _a;
         const messages = this.extractMessages();
         const metadata = this.getMetadata();
         const footnotes = this.getFootnotes();
@@ -31,7 +32,7 @@ class ConversationExtractor extends _base_1.BaseExtractor {
                 title: metadata.title || 'Conversation',
                 site: metadata.site,
                 description: metadata.description || `${metadata.site} conversation with ${messages.length} messages`,
-                wordCount: defuddled.wordCount?.toString() || '',
+                wordCount: ((_a = defuddled.wordCount) === null || _a === void 0 ? void 0 : _a.toString()) || '',
             }
         };
     }
