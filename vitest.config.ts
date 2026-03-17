@@ -1,13 +1,10 @@
 import { defineConfig } from 'vitest/config';
-import path from 'path';
 
 export default defineConfig({
-	resolve: {
-		alias: {
-			'./elements/math': path.resolve(__dirname, 'src/elements/math.full.ts'),
-		},
-	},
 	test: {
 		testTimeout: 30000,
+		// Use 'forks' pool to prevent dangling worker threads
+		// linkedom and DOM operations can leave async handles that prevent thread cleanup
+		pool: 'forks',
 	},
 });

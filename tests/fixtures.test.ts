@@ -1,102 +1,66 @@
 import { describe, test, expect } from 'vitest';
-import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { readFileSync, readdirSync } from 'fs';
 import { join, basename, extname } from 'path';
-import { Defuddle, DefuddleResponse } from '../src/node';
-import { getFixtures } from './helpers';
+import Defuddle from '../src/index';
 
 /**
- * Fixtures-based testing for Defuddle extractors
+ * Snapshot testing for all fixture files in default mode.
  * 
- * This test suite automatically discovers HTML fixtures in the tests/fixtures directory
- * and runs comprehensive tests against them. It saves expected results as markdown files
- * in tests/expected/ with JSON metadata as a preamble for easy comparison and review.
+ * This test suite runs Defuddle on every HTML fixture in tests/fixtures/
+ * and compares the output against stored snapshots. This ensures that
+ * changes to the codebase don't unintentionally alter the extraction output.
  * 
- * How it works:
- * 1. Processes all .html files in tests/fixtures/ with Defuddle
- * 2. Compares against saved expected results in tests/expected/
- * 3. If no expected result exists, creates a baseline
- * 4. If results differ, fails the test
- * 
- * Output format:
- * Each expected result is saved as a single .md file with:
- * - JSON metadata (excluding content) as a code block preamble
- * - Followed by the markdown content
- * 
- * To add new fixtures:
- * 1. Add .html files to tests/fixtures/
- * 2. Run `npm test` - this will create baseline expected results
- * 3. Review the generated files in tests/expected/
- * 
- * To update expected results:
- * 1. Delete the expected result file in tests/expected/
- * 2. Run `npm test`
- * 3. Review the updated files in tests/expected/
+ * To update snapshots after intentional changes:
+ *   npm test -- --update
  */
 
-// Helper function to save/load expected results
-function getExpectedMarkdownPath(fixtureName: string): string {
-  return join(__dirname, 'expected', `${fixtureName}.md`);
+const fixturesDir = join(__dirname, 'fixtures');
+
+function getFixtures(): Array<{ name: string; path: string }> {
+	const files = readdirSync(fixturesDir).filter(file => file.endsWith('.html'));
+
+	return files.map(file => {
+		const name = basename(file, extname(file));
+		const path = join(fixturesDir, file);
+		return { name, path };
+	});
 }
 
-function saveExpectedResult(fixtureName: string, result: string): void {
-  const expectedDir = join(__dirname, 'expected');
-  if (!existsSync(expectedDir)) {
-    require('fs').mkdirSync(expectedDir, { recursive: true });
-  }
+describe('Fixtures Snapshot Tests', () => {
+	const fixtures = getFixtures();
 
-  writeFileSync(getExpectedMarkdownPath(fixtureName), result, 'utf-8');
-}
+	test('should have fixtures to test', () => {
+		expect(fixtures.length).toBeGreaterThan(0);
+	});
 
-function loadExpectedResult(fixtureName: string): string | null {
-  const expectedPath = getExpectedMarkdownPath(fixtureName);
-  if (!existsSync(expectedPath)) {
-    return null;
-  }
-  
-  return readFileSync(expectedPath, 'utf-8');
-}
+		test.each(fixtures)('$name — should match snapshot', async ({ name, path }) => {
+		const html = readFileSync(path, 'utf-8');
+		
+		// Extract URL from fixture name (format: prefix--domain:path)
+		const urlMatch = name.match(/^[^--]+--(.+)$/);
+		const urlPath = urlMatch ? urlMatch[1].replace(/:/g, '/') : 'example.com';
+		const url = `https://${urlPath}`;
 
-function createComparableResult(response: DefuddleResponse): string {
-  const metadataOnly = {
-    title: response.title,
-    author: response.author,
-    site: response.site,
-    published: response.published,
-  };
-  const jsonPreamble = '```json\n' + JSON.stringify(metadataOnly, null, 2) + '\n```\n\n';
-  return jsonPreamble + response.contentMarkdown;
-}
+		// Process with Defuddle using default options + markdown
+		const result = await Defuddle(html, url, { separateMarkdown: true });
 
-describe('Fixtures Tests', () => {
-  const fixtures = getFixtures();
-  
-  test('should have fixtures to test', () => {
-    expect(fixtures.length).toBeGreaterThan(0);
-  });
+		// Basic sanity checks
+		expect(result.content).toBeDefined();
+		expect(result.content.length).toBeGreaterThan(0);
+		expect(result.wordCount).toBeGreaterThan(0);
+		expect(result.contentMarkdown).toBeDefined();
 
-  test.each(fixtures)('should process fixture: $name', async ({ name, path }) => {
-    // Load the HTML fixture
-    const html = readFileSync(path, 'utf-8');
-    
-    // Process with Defuddle
-    const urlName = basename(path, '.html').replace(/^[a-z]+--/, '');
-    const url = `https://${urlName.replace(/:/g, '/')}`;
-    const response = await Defuddle(html, url, { separateMarkdown: true });
-    const result = createComparableResult(response);
-    const expected = loadExpectedResult(name);
-    
-    // Basic validation to ensure the extraction worked
-    expect(response.content.length).toBeGreaterThan(0);
-    expect(response.contentMarkdown?.length).toBeGreaterThan(0);
+		// Create snapshot data (metadata + markdown content)
+		const snapshot = {
+			title: result.title,
+			author: result.author,
+			site: result.site,
+			published: result.published,
+			wordCount: result.wordCount,
+			content: result.contentMarkdown,
+		};
 
-    if (!expected) {
-      // No expected result exists, save this as the baseline
-      console.log(`Creating baseline expected result for ${name}`);
-      saveExpectedResult(name, result);
-    }
-
-    if (expected) {
-      expect(result.trim()).toEqual(expected.trim());
-    }
-  });
+		// Compare against snapshot
+		expect(snapshot).toMatchSnapshot(name);
+	});
 });

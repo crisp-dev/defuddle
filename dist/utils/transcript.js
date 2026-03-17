@@ -1,9 +1,6 @@
 "use strict";
 /**
  * Standardized transcript HTML and text construction.
- *
- * Used by YouTube (and potentially other video/audio extractors)
- * to produce consistent transcript markup.
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.formatTimestamp = formatTimestamp;

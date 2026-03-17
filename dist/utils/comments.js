@@ -2,9 +2,6 @@
 /**
  * Standardized comment HTML construction.
  *
- * Used by Reddit, Hacker News, GitHub, and other extractors to produce
- * consistent comment markup.
- *
  * Metadata format (in markdown): **author** · date · score
  * - date is linked if a url is provided
  * - score is omitted if not provided

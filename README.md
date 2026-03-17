@@ -20,41 +20,17 @@ Defuddle can be used as a replacement for [Mozilla Readability](https://github.c
 
 ## Usage
 
-### Browser
+Defuddle works with Node.js and uses [LinkeDOM](https://github.com/WebReflection/linkedom) - a lightweight DOM implementation. It parses HTML strings or LinkeDOM documents.
 
 ```javascript
 import Defuddle from 'defuddle';
-
-// Parse the current document
-const defuddle = new Defuddle(document);
-const result = defuddle.parse();
-
-// Access the content and metadata
-console.log(result.content);
-console.log(result.title);
-console.log(result.author);
-```
-
-### Node.js
-
-```javascript
-import { JSDOM } from 'jsdom';
-import { Defuddle } from 'defuddle/node';
 
 // Parse HTML from a string
 const html = '<html><body><article>...</article></body></html>';
 const result = await Defuddle(html);
 
-// Parse HTML from a URL
-const dom = await JSDOM.fromURL('https://example.com/article');
-const result = await Defuddle(dom);
-
-// With options
-const url = 'https://example.com/article'; // Original URL of the page
-const result = await Defuddle(dom, url, {
-  debug: true, // Enable debug mode for verbose logging
-  markdown: true // Convert content to markdown
-});
+// With URL for resolving relative links
+const result = await Defuddle(html, 'https://example.com/article');
 
 // Access the content and metadata
 console.log(result.content);
@@ -62,70 +38,29 @@ console.log(result.title);
 console.log(result.author);
 ```
 
-_Note: for `defuddle/node` to import properly, the module format in your `package.json` has to be set to `{ "type": "module" }`_
+### Options
 
-### CLI
-
-Defuddle includes a command-line interface for parsing web pages directly from the terminal. You can run it with `npx` or [install it globally](#cli-installation).
-
-```bash
-# Parse a local HTML file
-npx defuddle parse page.html
-
-# Parse a URL
-npx defuddle parse https://example.com/article
-
-# Output as markdown
-npx defuddle parse page.html --markdown
-
-# Output as JSON with metadata
-npx defuddle parse page.html --json
-
-# Extract a specific property
-npx defuddle parse page.html --property title
-
-# Save output to a file
-npx defuddle parse page.html --output result.html
-
-# Enable debug mode
-npx defuddle parse page.html --debug
+```typescript
+const result = await Defuddle(html, url, {
+  debug: true,                          // Enable debug mode
+  markdown: false,                      // Convert content to markdown
+  separateMarkdown: false,              // Keep HTML and return markdown separately
+  // Pipeline toggles
+  removeExactSelectors: true,
+  removePartialSelectors: true,
+  removeHiddenElements: true,
+  removeLowScoring: true,
+  removeSmallImages: true,
+  removeImages: false,
+  standardize: true,
+  contentSelector: 'article.post-content'  // Bypass auto-detection
+});
 ```
-
-#### CLI Options
-
-| Option | Alias | Description |
-|--------|-------|-------------|
-| `--output <file>` | `-o` | Write output to a file instead of stdout |
-| `--markdown` | `-m` | Convert content to markdown format |
-| `--md` | | Alias for `--markdown` |
-| `--json` | `-j` | Output as JSON with metadata and content |
-| `--property <name>` | `-p` | Extract a specific property (e.g., title, description, domain) |
-| `--debug` | | Enable debug mode |
 
 ## Installation
 
 ```bash
-npm install defuddle
-```
-
-For Node.js usage, you'll also need to install JSDOM:
-
-```bash
-npm install jsdom
-```
-
-### CLI installation
-
-To use the `defuddle` command globally, install it with the `-g` flag:
-
-```bash
-npm install -g defuddle
-```
-
-Or use `npx` to run the CLI without installing globally:
-
-```bash
-npx defuddle parse https://example.com/article
+pnpm install defuddle
 ```
 
 ## Response
@@ -135,7 +70,7 @@ Defuddle returns an object with the following properties:
 | Property | Type | Description |
 |----------|------|-------------|
 | `author` | string | Author of the article |
-| `content` | string | Cleaned up string of the extracted content |
+| `content` | string | Cleaned up string of the extracted content (HTML or Markdown based on options) |
 | `description` | string | Description or summary of the article |
 | `domain` | string | Domain name of the website |
 | `favicon` | string | URL of the website's favicon |
@@ -148,35 +83,48 @@ Defuddle returns an object with the following properties:
 | `schemaOrgData` | object | Raw schema.org data extracted from the page |
 | `title` | string | Title of the article |
 | `wordCount` | number | Total number of words in the extracted content |
+| `textContent` | string | Plain text version of the content (when htmlToText option is used) |
 | `debug` | object | Debug info including content selector and removals (when `debug: true`) |
 
-## Bundles
+## Bundle
 
-Defuddle is available in three different bundles:
+Defuddle is a **Node.js library** using [LinkeDOM](https://github.com/WebReflection/linkedom) for DOM operations. LinkeDOM is included as a dependency.
 
-1. Core bundle (`defuddle`): The main bundle for browser usage. No dependencies.
-2. Full bundle (`defuddle/full`): Includes additional features for math equation parsing and Markdown conversion.
-3. Node.js bundle (`defuddle/node`): Optimized for Node.js environments using JSDOM. Includes full capabilities for math and Markdown conversion.
+The library exposes a single async function as the default export:
 
-The core bundle is recommended for most use cases. It still handles math content, but doesn't include fallbacks for converting between MathML and LaTeX formats. The full bundle adds the ability to create reliable `<math>` elements using `mathml-to-latex` and `temml` libraries.
+```javascript
+import Defuddle from 'defuddle';
+const result = await Defuddle(htmlString, url, options);
+```
+
+For advanced usage, you can also import the `DefuddleClass` directly to work with LinkeDOM documents:
+
+```javascript
+import { DefuddleClass } from 'defuddle';
+import { parseHTML } from 'linkedom';
+
+const { document } = parseHTML(html);
+const defuddle = new DefuddleClass(document, { url: 'https://example.com' });
+const result = await defuddle.parseAsync();
+```
 
 ## Options
 
-| Option                   | Type    | Default | Description                                                               |
-| ------------------------ | ------- | ------- | ------------------------------------------------------------------------- |
-| `debug`                  | boolean | false   | Enable debug logging and return debug info in the response                |
-| `url`                    | string  |         | URL of the page being parsed                                              |
-| `markdown`               | boolean | false   | Convert `content` to Markdown                                             |
-| `separateMarkdown`       | boolean | false   | Keep `content` as HTML and return `contentMarkdown` as Markdown           |
-| `removeExactSelectors`   | boolean | true    | Remove elements matching exact selectors like ads, social buttons, etc.   |
-| `removePartialSelectors` | boolean | true    | Remove elements matching partial selectors like ads, social buttons, etc. |
-| `removeHiddenElements`   | boolean | true    | Remove elements hidden via CSS (display:none, visibility:hidden, etc.)    |
-| `removeLowScoring`       | boolean | true    | Remove non-content blocks by scoring (navigation, link lists, etc.)       |
-| `removeSmallImages`      | boolean | true    | Remove small images (icons, tracking pixels, etc.)                        |
-| `removeImages`           | boolean | false   | Remove images.                                                            |
-| `standardize`            | boolean | true    | Standardize HTML (footnotes, headings, code blocks, etc.)                 |
-| `contentSelector`        | string  |         | CSS selector to use as the main content element, bypassing auto-detection |
-| `useAsync`               | boolean | true    | Allow async extractors to fetch from third-party APIs when no local content is available. |
+| Option                   | Type              | Default | Description                                                               |
+| ------------------------ | ----------------- | ------- | ------------------------------------------------------------------------- |
+| `debug`                  | boolean           | false   | Enable debug logging and return debug info in the response                |
+| `url`                    | string            |         | URL of the page being parsed                                              |
+| `markdown`               | boolean           | false   | Convert `content` to Markdown                                             |
+| `separateMarkdown`       | boolean           | false   | Keep `content` as HTML and return `contentMarkdown` as Markdown           |
+| `htmlToText`             | boolean \| object | false   | Convert content to plain text (uses `html-to-text` package)               |
+| `removeExactSelectors`   | boolean           | true    | Remove elements matching exact selectors like ads, social buttons, etc.   |
+| `removePartialSelectors` | boolean           | true    | Remove elements matching partial selectors like ads, social buttons, etc. |
+| `removeHiddenElements`   | boolean           | true    | Remove elements hidden via CSS (display:none, visibility:hidden, etc.)    |
+| `removeLowScoring`       | boolean           | true    | Remove non-content blocks by scoring (navigation, link lists, etc.)       |
+| `removeSmallImages`      | boolean           | true    | Remove small images (icons, tracking pixels, etc.)                        |
+| `removeImages`           | boolean           | false   | Remove images.                                                            |
+| `standardize`            | boolean           | true    | Standardize HTML (footnotes, headings, code blocks, etc.)                 |
+| `contentSelector`        | string            |         | CSS selector to use as the main content element, bypassing auto-detection |
 
 ## HTML standardization
 
@@ -234,25 +182,41 @@ Math elements, including MathJax and KaTeX, are converted to standard MathML:
 
 ### Build
 
-To build the package, you'll need Node.js and npm installed. Then run:
+To build the package, you'll need Node.js and pnpm installed. Then run:
 
 ```bash
 # Install dependencies
-npm install
+pnpm install
 
 # Clean and build
-npm run build
+pnpm run build
 ```
 
-## Third-party services
+## Development
 
-When using `parseAsync()`, if no content can be extracted from the local HTML, Defuddle may fetch content from third-party APIs as a fallback. This only happens when the page HTML contains no usable content (e.g. client-side rendered SPAs). You can disable this by setting `useAsync: false` in options.
+### Build
 
-- [FxTwitter API](https://github.com/FixTweet/FxTwitter) — Used to extract X (Twitter) article content, which is not available in server-rendered HTML.
+To build the package, you'll need Node.js and pnpm installed. Then run:
 
-## Debugging
+```bash
+# Install dependencies
+pnpm install
 
-### Debug mode
+# Build
+pnpm run build
+```
+
+### Testing
+
+Tests use Vitest with snapshot testing for fixtures:
+
+```bash
+# Run tests
+pnpm test
+
+# Update snapshots
+pnpm test -- --update
+```
 
 You can enable debug mode by passing an options object when creating a new Defuddle instance:
 
@@ -278,6 +242,7 @@ The `debug` field contains:
 |----------|------|-------------|
 | `contentSelector` | string | CSS selector path of the chosen main content element |
 | `removals` | array | List of elements removed during processing |
+| `parseTime` | number | Time taken to parse in milliseconds |
 
 Each removal entry contains:
 

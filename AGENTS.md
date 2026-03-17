@@ -1,6 +1,6 @@
 # Defuddle
 
-Extracts main content from web pages as clean HTML.
+Extracts main content from web pages as clean HTML. **Node.js library** using [LinkeDOM](https://github.com/WebReflection/linkedom).
 
 ## Project structure
 
@@ -9,28 +9,17 @@ Extracts main content from web pages as clean HTML.
 - `src/scoring.ts` — Content scoring to remove non-content blocks
 - `src/constants.ts` — Exact/partial selectors for clutter removal
 - `src/elements/` — Element-specific rules (code, footnotes, math)
-- `src/extractors/` — Site-specific extractors
 - `src/utils/dom.ts` — DOM utilities (`parseHTML`, `serializeHTML`)
-- `src/index.ts` / `src/index.full.ts` — Bundle entry points (UMD, `export: 'default'`)
-- `website/src/convert.ts` — Cloudflare Worker API (defuddle.md)
-
-## Environments
-
-- **Browser** (`defuddle`, `defuddle/full`) — Native DOM. Used by extensions and web apps.
-- **Node.js** (`defuddle/node`) — JSDOM. Async API.
-- **CLI** (`src/cli.ts`) — JSDOM. Supports `--markdown` and `--json` flags.
-- **Cloudflare Worker** (`website/src/convert.ts`) — linkedom polyfill, most constrained DOM.
+- `src/index.ts` — Main entry point (exports async Defuddle function)
 
 ## Build and test
 
-- `npm run build` — Build all bundles
-- `npm test` — Run Vitest
+- `pnpm run build` — Build the library
+- `pnpm test` — Run Vitest
 
-### Testing across environments
+### Testing
 
-1. **Worker**: `http://localhost:8787/https://stephango.com/saw` — run with `cd website && npx wrangler dev`
-2. **CLI**: `npx defuddle parse https://stephango.com/saw --markdown`
-3. **Vitest fixtures**: HTML files in `tests/fixtures/` with expected output in `tests/expected/`
+Vitest fixtures: HTML files in `tests/fixtures/` with snapshots in `tests/__snapshots__/`
 
 ## Debugging content extraction
 
@@ -86,5 +75,5 @@ Debug mode preserves class/id/data-* attributes and skips div flattening. Use `c
 - **Sanitize URLs** — `javascript:` and `data:text/html` must be stripped from `href`/`src` attributes. `srcdoc` must be stripped from iframes. `on*` event handler attributes must be removed. See `sanitizeContent()` in `src/defuddle.ts`.
 
 ### Common pitfalls
-- **UMD exports**: `export: 'default'` in webpack means named exports must be static properties on the default class (see `src/index.full.ts`).
+
 - **Live HTMLCollections**: `getElementsByTagName` returns live collections. Convert to static arrays with `Array.from()` before mutating the DOM.

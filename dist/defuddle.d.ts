@@ -29,8 +29,7 @@ export declare class Defuddle {
     private _getSchemaText;
     /**
      * Remove dangerous elements and attributes from this.doc.
-     * Called after parseInternal so that extractors and schema extraction
-     * can still read script tags they depend on.
+     * Called after parseInternal so schema extraction can still read script tags.
      * OPTIMIZED: Single-pass DOM traversal combining element and attribute removal.
      */
     private _stripUnsafeElements;
@@ -46,20 +45,10 @@ export declare class Defuddle {
      */
     private _getLargestImageSrc;
     /**
-     * Parse the document asynchronously. Checks for extractors that prefer
-     * async (e.g. YouTube transcripts) before sync, then falls back to async
-     * extractors if sync parse yields no content.
+     * Parse the document asynchronously.
+     * (Extractors have been removed, so this just calls parse())
      */
     parseAsync(): Promise<DefuddleResponse>;
-    /**
-     * Fetch only async variables (e.g. transcript) without re-parsing.
-     * Safe to call after parse() — uses cached schema.org data since
-     * parse() strips script tags from the document.
-     */
-    fetchAsyncVariables(): Promise<{
-        [key: string]: string;
-    } | null>;
-    private tryAsyncExtractor;
     /**
      * Internal parse method that does the actual work
      */
@@ -95,6 +84,13 @@ export declare class Defuddle {
      */
     private resolveStreamedContent;
     /**
+     * Unwrap content from <template> elements that contain actual page content.
+     * Frameworks like Vue.js and some CMS systems use <template slot="contents">
+     * to hold the main article content. The template content is not rendered by
+     * default, so we extract it and replace the template with its content.
+     */
+    private unwrapTemplateContent;
+    /**
      * Replace a shadow DOM host element with a div containing its shadow content.
      * Custom elements (tag names with hyphens) would re-initialize when inserted
      * into a live DOM, recreating their shadow roots and hiding the content.
@@ -107,15 +103,6 @@ export declare class Defuddle {
     private _extractSchemaOrgData;
     private _collectMetaTags;
     private _decodeHTMLEntities;
-    /**
-     * Build a DefuddleResponse from an extractor result with metadata
-     */
-    private buildExtractorResponse;
-    /**
-     * Filter extractor variables to only include custom ones
-     * (exclude standard fields that are already mapped to top-level properties)
-     */
-    private getExtractorVariables;
     /**
      * Content-based pattern removal for elements that can't be detected by
      * CSS selectors (e.g. Tailwind/CSS-in-JS sites with non-semantic class names).

@@ -11,15 +11,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Defuddle = void 0;
 const metadata_1 = require("./metadata");
-const extractor_registry_1 = require("./extractor-registry");
 const constants_1 = require("./constants");
 const standardize_1 = require("./standardize");
 const footnotes_1 = require("./elements/footnotes");
 const scoring_1 = require("./scoring");
 const utils_1 = require("./utils");
 const dom_1 = require("./utils/dom");
-/** Keys from extractor variables that map to top-level DefuddleResponse fields */
-const STANDARD_VARIABLE_KEYS = new Set(['title', 'author', 'published', 'site', 'description', 'image', 'language']);
 // Content pattern detection constants
 const CONTENT_DATE_PATTERN = /(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2}/i;
 const CONTENT_READ_TIME_PATTERN = /\d+\s*min(?:ute)?s?\s+read\b/i;
@@ -98,7 +95,7 @@ class Defuddle {
         // Strip dangerous elements from this.doc before any fallback paths
         // that read from it (e.g. _findContentBySchemaText).
         // This must happen after parseInternal, which needs script tags
-        // for schema.org extraction, site-specific extractors, and math.
+        // for schema.org extraction and math.
         this._stripUnsafeElements();
         // If schema.org has a SocialMediaPosting with text content that is
         // longer than what we extracted, the scorer likely picked the wrong
@@ -138,8 +135,7 @@ class Defuddle {
     }
     /**
      * Remove dangerous elements and attributes from this.doc.
-     * Called after parseInternal so that extractors and schema extraction
-     * can still read script tags they depend on.
+     * Called after parseInternal so schema extraction can still read script tags.
      * OPTIMIZED: Single-pass DOM traversal combining element and attribute removal.
      */
     _stripUnsafeElements() {
@@ -290,67 +286,12 @@ class Defuddle {
         return url;
     }
     /**
-     * Parse the document asynchronously. Checks for extractors that prefer
-     * async (e.g. YouTube transcripts) before sync, then falls back to async
-     * extractors if sync parse yields no content.
+     * Parse the document asynchronously.
+     * (Extractors have been removed, so this just calls parse())
      */
     parseAsync() {
         return __awaiter(this, void 0, void 0, function* () {
-            var _a;
-            if (this.options.useAsync !== false) {
-                const asyncResult = yield this.tryAsyncExtractor(extractor_registry_1.ExtractorRegistry.findPreferredAsyncExtractor.bind(extractor_registry_1.ExtractorRegistry));
-                if (asyncResult)
-                    return asyncResult;
-            }
-            const result = this.parse();
-            if (result.wordCount > 0 || this.options.useAsync === false) {
-                return result;
-            }
-            return (_a = (yield this.tryAsyncExtractor(extractor_registry_1.ExtractorRegistry.findAsyncExtractor.bind(extractor_registry_1.ExtractorRegistry)))) !== null && _a !== void 0 ? _a : result;
-        });
-    }
-    /**
-     * Fetch only async variables (e.g. transcript) without re-parsing.
-     * Safe to call after parse() — uses cached schema.org data since
-     * parse() strips script tags from the document.
-     */
-    fetchAsyncVariables() {
-        return __awaiter(this, void 0, void 0, function* () {
-            if (this.options.useAsync === false)
-                return null;
-            try {
-                const url = this.options.url || this.doc.URL;
-                const schemaOrgData = this.getSchemaOrgData();
-                const extractor = extractor_registry_1.ExtractorRegistry.findPreferredAsyncExtractor(this.doc, url, schemaOrgData);
-                if (extractor) {
-                    const extracted = yield extractor.extractAsync();
-                    return this.getExtractorVariables(extracted.variables) || null;
-                }
-            }
-            catch (error) {
-                console.error('Defuddle', 'Error fetching async variables:', error);
-            }
-            return null;
-        });
-    }
-    tryAsyncExtractor(finder) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const url = this.options.url || this.doc.URL;
-                const schemaOrgData = this.getSchemaOrgData();
-                const extractor = finder(this.doc, url, schemaOrgData);
-                if (extractor) {
-                    const startTime = Date.now();
-                    const extracted = yield extractor.extractAsync();
-                    const pageMetaTags = this._collectMetaTags();
-                    const metadata = metadata_1.MetadataExtractor.extract(this.doc, schemaOrgData, pageMetaTags);
-                    return this.buildExtractorResponse(extracted, metadata, startTime, extractor, pageMetaTags);
-                }
-            }
-            catch (error) {
-                console.error('Defuddle', 'Error in async extraction:', error);
-            }
-            return null;
+            return this.parse();
         });
     }
     /**
@@ -375,14 +316,6 @@ class Defuddle {
             this.removeImages(this.doc);
         }
         try {
-            // Use site-specific extractor first, if there is one
-            const url = options.url || this.doc.URL;
-            const extractor = extractor_registry_1.ExtractorRegistry.findExtractor(this.doc, url, schemaOrgData);
-            if (extractor && extractor.canExtract()) {
-                const extracted = extractor.extract();
-                return this.buildExtractorResponse(extracted, metadata, startTime, extractor, pageMetaTags);
-            }
-            // Continue if there is no extractor...
             // Evaluate mobile styles and sizes on original document (cached across retries)
             if (!this._mobileStyles) {
                 this._mobileStyles = this._evaluateMediaQueries(this.doc);
@@ -394,6 +327,10 @@ class Defuddle {
             this.flattenShadowRoots(this.doc, clone);
             // Resolve React streaming SSR suspense boundaries
             this.resolveStreamedContent(clone);
+            // Unwrap template content — frameworks like Vue.js use <template slot="contents">
+            // to hold the actual page content. We need to extract and insert this content
+            // so it becomes visible and can be scored by the content finder.
+            this.unwrapTemplateContent(clone);
             // Remove user-specified selectors early in processing
             if (options.removeSelectors && options.removeSelectors.length > 0) {
                 const selector = options.removeSelectors.join(',');
@@ -557,6 +494,16 @@ class Defuddle {
             if (element.querySelector('math, [data-mathml], .katex-mathml') ||
                 element.tagName.toLowerCase() === 'math') {
                 continue;
+            }
+            // Skip <template> elements with content — they're often used by frameworks
+            // (Vue.js, web components) to hold actual page content. The slot attribute
+            // is a strong indicator, but also preserve any template with child elements.
+            if (element.tagName.toLowerCase() === 'template') {
+                const hasSlotAttr = element.hasAttribute('slot');
+                const hasContent = element.innerHTML.trim().length > 0;
+                if (hasSlotAttr || hasContent) {
+                    continue;
+                }
             }
             // Check inline style for hidden patterns
             const style = element.getAttribute('style');
@@ -1072,6 +1019,34 @@ class Defuddle {
         }
     }
     /**
+     * Unwrap content from <template> elements that contain actual page content.
+     * Frameworks like Vue.js and some CMS systems use <template slot="contents">
+     * to hold the main article content. The template content is not rendered by
+     * default, so we extract it and replace the template with its content.
+     */
+    unwrapTemplateContent(doc) {
+        const templates = doc.querySelectorAll('template[slot]');
+        let unwrappedCount = 0;
+        for (const template of templates) {
+            const content = template.content;
+            if (!content || content.childNodes.length === 0)
+                continue;
+            const parent = template.parentNode;
+            if (!parent)
+                continue;
+            // Clone the content so we can insert it
+            const fragment = content.cloneNode(true);
+            // Insert content before the template
+            parent.insertBefore(fragment, template);
+            // Remove the template element
+            template.remove();
+            unwrappedCount++;
+        }
+        if (unwrappedCount > 0) {
+            this._log('Unwrapped template content:', unwrappedCount, 'templates');
+        }
+    }
+    /**
      * Replace a shadow DOM host element with a div containing its shadow content.
      * Custom elements (tag names with hyphens) would re-initialize when inserted
      * into a live DOM, recreating their shadow roots and hiding the content.
@@ -1162,32 +1137,6 @@ class Defuddle {
     }
     _decodeHTMLEntities(text) {
         return (0, dom_1.decodeHTMLEntities)(this.doc, text);
-    }
-    /**
-     * Build a DefuddleResponse from an extractor result with metadata
-     */
-    buildExtractorResponse(extracted, metadata, startTime, extractor, pageMetaTags) {
-        var _a, _b, _c, _d, _e;
-        const contentHtml = this.resolveContentUrls(extracted.contentHtml);
-        const variables = this.getExtractorVariables(extracted.variables);
-        return Object.assign({ content: contentHtml, title: ((_a = extracted.variables) === null || _a === void 0 ? void 0 : _a.title) || metadata.title, description: metadata.description, domain: metadata.domain, favicon: metadata.favicon, image: metadata.image, language: ((_b = extracted.variables) === null || _b === void 0 ? void 0 : _b.language) || metadata.language, published: ((_c = extracted.variables) === null || _c === void 0 ? void 0 : _c.published) || metadata.published, author: ((_d = extracted.variables) === null || _d === void 0 ? void 0 : _d.author) || metadata.author, site: ((_e = extracted.variables) === null || _e === void 0 ? void 0 : _e.site) || metadata.site, schemaOrgData: metadata.schemaOrgData, wordCount: this.countWords(extracted.contentHtml), parseTime: Math.round(Date.now() - startTime), extractorType: extractor.constructor.name.replace('Extractor', '').toLowerCase(), metaTags: pageMetaTags }, (variables ? { variables } : {}));
-    }
-    /**
-     * Filter extractor variables to only include custom ones
-     * (exclude standard fields that are already mapped to top-level properties)
-     */
-    getExtractorVariables(variables) {
-        if (!variables)
-            return undefined;
-        const custom = {};
-        let hasCustom = false;
-        for (const [key, value] of Object.entries(variables)) {
-            if (!STANDARD_VARIABLE_KEYS.has(key)) {
-                custom[key] = value;
-                hasCustom = true;
-            }
-        }
-        return hasCustom ? custom : undefined;
     }
     /**
      * Content-based pattern removal for elements that can't be detected by

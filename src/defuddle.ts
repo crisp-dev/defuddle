@@ -1,7 +1,5 @@
 import { MetadataExtractor } from './metadata';
 import { DefuddleOptions, DefuddleResponse, MetaTagItem, DebugRemoval } from './types';
-import { ExtractorRegistry } from './extractor-registry';
-import { BaseExtractor } from './extractors/_base';
 import {
 	BLOCK_ELEMENTS_SELECTOR,
 	EXACT_SELECTORS,
@@ -22,9 +20,6 @@ interface StyleChange {
 	selector: string;
 	styles: string;
 }
-
-/** Keys from extractor variables that map to top-level DefuddleResponse fields */
-const STANDARD_VARIABLE_KEYS = new Set(['title', 'author', 'published', 'site', 'description', 'image', 'language']);
 
 // Content pattern detection constants
 const CONTENT_DATE_PATTERN = /(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2}/i;
@@ -119,7 +114,7 @@ export class Defuddle {
 		// Strip dangerous elements from this.doc before any fallback paths
 		// that read from it (e.g. _findContentBySchemaText).
 		// This must happen after parseInternal, which needs script tags
-		// for schema.org extraction, site-specific extractors, and math.
+		// for schema.org extraction and math.
 		this._stripUnsafeElements();
 
 		// If schema.org has a SocialMediaPosting with text content that is
@@ -162,8 +157,7 @@ export class Defuddle {
 
 	/**
 	 * Remove dangerous elements and attributes from this.doc.
-	 * Called after parseInternal so that extractors and schema extraction
-	 * can still read script tags they depend on.
+	 * Called after parseInternal so schema extraction can still read script tags.
 	 * OPTIMIZED: Single-pass DOM traversal combining element and attribute removal.
 	 */
 	private _stripUnsafeElements(): void {
@@ -324,73 +318,11 @@ export class Defuddle {
 	}
 
 	/**
-	 * Parse the document asynchronously. Checks for extractors that prefer
-	 * async (e.g. YouTube transcripts) before sync, then falls back to async
-	 * extractors if sync parse yields no content.
+	 * Parse the document asynchronously.
+	 * (Extractors have been removed, so this just calls parse())
 	 */
 	async parseAsync(): Promise<DefuddleResponse> {
-		if (this.options.useAsync !== false) {
-			const asyncResult = await this.tryAsyncExtractor(
-				ExtractorRegistry.findPreferredAsyncExtractor.bind(ExtractorRegistry)
-			);
-			if (asyncResult) return asyncResult;
-		}
-
-		const result = this.parse();
-
-		if (result.wordCount > 0 || this.options.useAsync === false) {
-			return result;
-		}
-
-		return (await this.tryAsyncExtractor(
-			ExtractorRegistry.findAsyncExtractor.bind(ExtractorRegistry)
-		)) ?? result;
-	}
-
-	/**
-	 * Fetch only async variables (e.g. transcript) without re-parsing.
-	 * Safe to call after parse() — uses cached schema.org data since
-	 * parse() strips script tags from the document.
-	 */
-	async fetchAsyncVariables(): Promise<{ [key: string]: string } | null> {
-		if (this.options.useAsync === false) return null;
-
-		try {
-			const url = this.options.url || this.doc.URL;
-			const schemaOrgData = this.getSchemaOrgData();
-			const extractor = ExtractorRegistry.findPreferredAsyncExtractor(this.doc, url, schemaOrgData);
-
-			if (extractor) {
-				const extracted = await extractor.extractAsync();
-				return this.getExtractorVariables(extracted.variables) || null;
-			}
-		} catch (error) {
-			console.error('Defuddle', 'Error fetching async variables:', error);
-		}
-
-		return null;
-	}
-
-	private async tryAsyncExtractor(
-		finder: (document: Document, url: string, schemaOrgData?: any) => BaseExtractor | null
-	): Promise<DefuddleResponse | null> {
-		try {
-			const url = this.options.url || this.doc.URL;
-			const schemaOrgData = this.getSchemaOrgData();
-			const extractor = finder(this.doc, url, schemaOrgData);
-
-			if (extractor) {
-				const startTime = Date.now();
-				const extracted = await extractor.extractAsync();
-				const pageMetaTags = this._collectMetaTags();
-				const metadata = MetadataExtractor.extract(this.doc, schemaOrgData, pageMetaTags);
-				return this.buildExtractorResponse(extracted, metadata, startTime, extractor, pageMetaTags);
-			}
-		} catch (error) {
-			console.error('Defuddle', 'Error in async extraction:', error);
-		}
-
-		return null;
+		return this.parse();
 	}
 
 	/**
@@ -430,16 +362,6 @@ export class Defuddle {
 		}
 
 		try {
-			// Use site-specific extractor first, if there is one
-			const url = options.url || this.doc.URL;
-			const extractor = ExtractorRegistry.findExtractor(this.doc, url, schemaOrgData);
-			if (extractor && extractor.canExtract()) {
-				const extracted = extractor.extract();
-				return this.buildExtractorResponse(extracted, metadata, startTime, extractor, pageMetaTags);
-			}
-
-			// Continue if there is no extractor...
-
 			// Evaluate mobile styles and sizes on original document (cached across retries)
 			if (!this._mobileStyles) {
 				this._mobileStyles = this._evaluateMediaQueries(this.doc);
@@ -454,6 +376,11 @@ export class Defuddle {
 
 		// Resolve React streaming SSR suspense boundaries
 		this.resolveStreamedContent(clone);
+
+		// Unwrap template content — frameworks like Vue.js use <template slot="contents">
+		// to hold the actual page content. We need to extract and insert this content
+		// so it becomes visible and can be scored by the content finder.
+		this.unwrapTemplateContent(clone);
 
 		// Remove user-specified selectors early in processing
 		if (options.removeSelectors && options.removeSelectors.length > 0) {
@@ -662,6 +589,17 @@ export class Defuddle {
 			if (element.querySelector('math, [data-mathml], .katex-mathml') ||
 				element.tagName.toLowerCase() === 'math') {
 				continue;
+			}
+
+			// Skip <template> elements with content — they're often used by frameworks
+			// (Vue.js, web components) to hold actual page content. The slot attribute
+			// is a strong indicator, but also preserve any template with child elements.
+			if (element.tagName.toLowerCase() === 'template') {
+				const hasSlotAttr = element.hasAttribute('slot');
+				const hasContent = element.innerHTML.trim().length > 0;
+				if (hasSlotAttr || hasContent) {
+					continue;
+				}
 			}
 
 			// Check inline style for hidden patterns
@@ -1232,6 +1170,39 @@ export class Defuddle {
 	}
 
 	/**
+	 * Unwrap content from <template> elements that contain actual page content.
+	 * Frameworks like Vue.js and some CMS systems use <template slot="contents">
+	 * to hold the main article content. The template content is not rendered by
+	 * default, so we extract it and replace the template with its content.
+	 */
+	private unwrapTemplateContent(doc: Document): void {
+		const templates = doc.querySelectorAll('template[slot]');
+		let unwrappedCount = 0;
+
+		for (const template of templates) {
+			const content = (template as HTMLTemplateElement).content;
+			if (!content || content.childNodes.length === 0) continue;
+
+			const parent = template.parentNode;
+			if (!parent) continue;
+
+			// Clone the content so we can insert it
+			const fragment = content.cloneNode(true) as DocumentFragment;
+
+			// Insert content before the template
+			parent.insertBefore(fragment, template);
+
+			// Remove the template element
+			template.remove();
+			unwrappedCount++;
+		}
+
+		if (unwrappedCount > 0) {
+			this._log('Unwrapped template content:', unwrappedCount, 'templates');
+		}
+	}
+
+	/**
 	 * Replace a shadow DOM host element with a div containing its shadow content.
 	 * Custom elements (tag names with hyphens) would re-initialize when inserted
 	 * into a live DOM, recreating their shadow roots and hiding the content.
@@ -1326,55 +1297,6 @@ export class Defuddle {
 
 	private _decodeHTMLEntities(text: string): string {
 		return decodeHTMLEntities(this.doc, text);
-	}
-
-	/**
-	 * Build a DefuddleResponse from an extractor result with metadata
-	 */
-	private buildExtractorResponse(
-		extracted: { contentHtml: string; variables?: { [key: string]: string } },
-		metadata: ReturnType<typeof MetadataExtractor.extract>,
-		startTime: number,
-		extractor: BaseExtractor,
-		pageMetaTags: MetaTagItem[]
-	): DefuddleResponse {
-		const contentHtml = this.resolveContentUrls(extracted.contentHtml);
-		const variables = this.getExtractorVariables(extracted.variables);
-		return {
-			content: contentHtml,
-			title: extracted.variables?.title || metadata.title,
-			description: metadata.description,
-			domain: metadata.domain,
-			favicon: metadata.favicon,
-			image: metadata.image,
-			language: extracted.variables?.language || metadata.language,
-			published: extracted.variables?.published || metadata.published,
-			author: extracted.variables?.author || metadata.author,
-			site: extracted.variables?.site || metadata.site,
-			schemaOrgData: metadata.schemaOrgData,
-			wordCount: this.countWords(extracted.contentHtml),
-			parseTime: Math.round(Date.now() - startTime),
-			extractorType: extractor.constructor.name.replace('Extractor', '').toLowerCase(),
-			metaTags: pageMetaTags,
-			...(variables ? { variables } : {}),
-		};
-	}
-
-	/**
-	 * Filter extractor variables to only include custom ones
-	 * (exclude standard fields that are already mapped to top-level properties)
-	 */
-	private getExtractorVariables(variables?: { [key: string]: string }): { [key: string]: string } | undefined {
-		if (!variables) return undefined;
-		const custom: { [key: string]: string } = {};
-		let hasCustom = false;
-		for (const [key, value] of Object.entries(variables)) {
-			if (!STANDARD_VARIABLE_KEYS.has(key)) {
-				custom[key] = value;
-				hasCustom = true;
-			}
-		}
-		return hasCustom ? custom : undefined;
 	}
 
 	/**

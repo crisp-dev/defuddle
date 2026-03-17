@@ -2,5 +2,4 @@
 .cursorrules
 
 node_modules/
-
-.wrangler/
+benchmark/

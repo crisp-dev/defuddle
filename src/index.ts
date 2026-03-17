@@ -34,8 +34,7 @@ async function Defuddle(
 	if (doc.defaultView && !doc.defaultView.getComputedStyle) {
 		doc.defaultView.getComputedStyle = () => ({ display: '' });
 	}
-	// Fall back to "about:blank" so new URL(document.URL) never throws inside
-	// the extractor registry when no URL is provided by the caller.
+	// Fall back to "about:blank" so new URL(document.URL) never throws.
 	const pageUrl = url || 'about:blank';
 	if (!doc.URL) doc.URL = pageUrl;
 

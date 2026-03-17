@@ -35,10 +35,8 @@ export interface DefuddleResponse extends DefuddleMetadata {
 	content: string;
 	contentMarkdown?: string;
 	contentText?: string;
-	extractorType?: string;
 	metaTags?: MetaTagItem[];
 	debug?: DebugInfo;
-	variables?: { [key: string]: string };
 }
 
 export interface DefuddleOptions {
@@ -91,13 +89,6 @@ export interface DefuddleOptions {
 	removeImages?: boolean;
 
 	/**
-	 * Allow async extractors to fetch content from third-party APIs
-	 * when no content can be extracted from the local HTML.
-	 * Defaults to true
-	 */
-	useAsync?: boolean;
-
-	/**
 	 * Toggle hidden element removal
 	 * Defaults to true
 	 */
@@ -140,17 +131,4 @@ export interface DefuddleOptions {
 }
 
 // Import type from html-to-text
-export type HtmlToTextOptions = import('html-to-text').HtmlToTextOptions;
-
-export interface ExtractorVariables {
-	[key: string]: string;
-}
-
-export interface ExtractedContent {
-	title?: string;
-	author?: string;
-	published?: string;
-	content?: string;
-	contentHtml?: string;
-	variables?: ExtractorVariables;
-} 
+export type HtmlToTextOptions = import('html-to-text').HtmlToTextOptions; 

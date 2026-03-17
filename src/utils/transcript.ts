@@ -1,8 +1,5 @@
 /**
  * Standardized transcript HTML and text construction.
- *
- * Used by YouTube (and potentially other video/audio extractors)
- * to produce consistent transcript markup.
  */
 
 import { escapeHtml } from './dom';
