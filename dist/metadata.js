@@ -212,12 +212,14 @@ class MetadataExtractor {
     }
     static getTitle(doc, schemaOrgData, metaTags) {
         var _a, _b;
-        const rawTitle = (this.getMetaContent(metaTags, "property", "og:title") ||
+        // Try document title first, then fall back to other sources
+        const docTitle = (_b = (_a = doc.querySelector('title')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim();
+        const rawTitle = (docTitle ||
+            this.getMetaContent(metaTags, "property", "og:title") ||
             this.getMetaContent(metaTags, "name", "twitter:title") ||
             this.getSchemaProperty(schemaOrgData, 'headline') ||
             this.getMetaContent(metaTags, "name", "title") ||
             this.getMetaContent(metaTags, "name", "sailthru.title") ||
-            ((_b = (_a = doc.querySelector('title')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim()) ||
             '');
         return this.cleanTitle(rawTitle, this.getSite(doc, schemaOrgData, metaTags));
     }

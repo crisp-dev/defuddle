@@ -850,7 +850,7 @@ All that said, looking back from 2025, I think we've mostly as a field moved awa
 [^6]: Spoiler: the coffee automaton paper that is coming up in Paper 20 is also in this thread.",
   "published": "2025-03-06T12:48:40+00:00",
   "site": "12 Grams of Carbon",
-  "title": "Ilya's Papers to Carmack: VLAEs",
+  "title": "Ilya's Papers to Carmack: VLAEs - by theahura",
   "wordCount": 3826,
 }
 `;
@@ -967,7 +967,9 @@ Robert Wilson has also constructed the Leech lattice from the integral octonions
 exports[`Fixtures Snapshot Tests > 'general--daringfireball.net:2025:02:t…' — should match snapshot > general--daringfireball.net:2025:02:the_iphone_16e 1`] = `
 {
   "author": "John Gruber",
-  "content": "I’ve spent the last six days using the iPhone 16e, and the experience has been a throwback. In many ways, the iPhone 16e both looks and feels like the modern-day progeny of the early Steve Jobs era iPhones. Early iPhones like the plastic 3G and 3GS, and the glass-back/metal-sides 4 and 4S were simpler offerings. Two colors, black and white. Single-lens inconspicuous cameras. The iPhone 16e feels like their direct descendent.
+  "content": "## The iPhone 16e
+
+I’ve spent the last six days using the iPhone 16e, and the experience has been a throwback. In many ways, the iPhone 16e both looks and feels like the modern-day progeny of the early Steve Jobs era iPhones. Early iPhones like the plastic 3G and 3GS, and the glass-back/metal-sides 4 and 4S were simpler offerings. Two colors, black and white. Single-lens inconspicuous cameras. The iPhone 16e feels like their direct descendent.
 
 Let’s start with the camera. With just a single lens on the back, the iPhone 16e camera doesn’t just *look* less conspicuous compared to its dual- and triple-lens brethren, it *feels* less conspicuous. Especially for me, coming from several years of daily-driving an iPhone Pro model, the 16e feels strikingly smaller in hand and pocket because it lacks the entire “mesa” protrusion from which iPhone 16 and 16 Pro camera lenses further protrude.
 
@@ -1032,8 +1034,8 @@ The iPhone 16e is an iPhone for people who don’t want to think much about thei
 [^2]: One of the most surprising aspects of my professional life in recent years is how much time I spend thinking and writing about magnets. But the “snapping into place” thing does raise the question of why Apple didn’t include magnets in its cases for the 16e.",
   "published": "2025-02-26T00:00:00+00:00",
   "site": "Daring Fireball",
-  "title": "The iPhone 16e",
-  "wordCount": 1952,
+  "title": "Daring Fireball: The iPhone 16e",
+  "wordCount": 1955,
 }
 `;
 
@@ -1136,7 +1138,7 @@ The root cause was a malformed \`<figure>\` in the source HTML.
 - \`npm test\`",
   "published": "",
   "site": "",
-  "title": "Fix rendering when malformed elements nest content",
+  "title": "Fix rendering when malformed elements nest content · Pull Request #42 · test-owner/test-repo",
   "wordCount": 45,
 }
 `;
@@ -2182,7 +2184,9 @@ Read the 🧠 Knowledge Series with technical workflows, real implementation exa
 ![](https://substackcdn.com/image/fetch/$s_!4Id3!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fb8fae3e6-4223-44ed-8e64-508cfe1bd090_1644x2431.png)",
   "published": "",
   "site": "Substack",
-  "title": "Rich Holmes (@richholmes)",
+  "title": "Rich Holmes (@richholmes): "Google's former CEO says traditional user interfaces "are going to go away."
+It sounds far-fetched but Google is already rolling out the technology to make it happen.
+It's called A2UI - and it's quietly transforming how products like Opal and Gemini generate interfaces on the …"",
   "wordCount": 234,
 }
 `;
