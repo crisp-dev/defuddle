@@ -222,13 +222,15 @@ export class MetadataExtractor {
 	}
 
 	private static getTitle(doc: Document, schemaOrgData: any, metaTags: MetaTagItem[]): string {
+		// Try document title first, then fall back to other sources
+		const docTitle = doc.querySelector('title')?.textContent?.trim();
 		const rawTitle = (
+			docTitle ||
 			this.getMetaContent(metaTags, "property", "og:title") ||
 			this.getMetaContent(metaTags, "name", "twitter:title") ||
 			this.getSchemaProperty(schemaOrgData, 'headline') ||
 			this.getMetaContent(metaTags, "name", "title") ||
 			this.getMetaContent(metaTags, "name", "sailthru.title") ||
-			doc.querySelector('title')?.textContent?.trim() ||
 			''
 		);
 
