@@ -1239,15 +1239,18 @@ export class Defuddle {
 
 		schemaScripts.forEach(script => {
 			let jsonContent = script.textContent || '';
+			let jsonData: any = null;
 			
 			try {
 				jsonContent = jsonContent
 					.replace(/\/\*[\s\S]*?\*\/|^\s*\/\/.*$/gm, '')
 					.replace(/^\s*<!\[CDATA\[([\s\S]*?)\]\]>\s*$/, '$1')
 					.replace(/^\s*(\*\/|\/\*)\s*|\s*(\*\/|\/\*)\s*$/g, '')
+					// Remove illegal control characters that JSON doesn't allow in strings
+					.replace(/[\x00-\x1F\x7F]/g, '')
 					.trim();
 					
-				const jsonData = JSON.parse(jsonContent);
+				jsonData = JSON.parse(jsonContent);
 
 				if (jsonData['@graph'] && Array.isArray(jsonData['@graph'])) {
 					rawSchemaItems.push(...jsonData['@graph']);
@@ -1255,8 +1258,9 @@ export class Defuddle {
 					rawSchemaItems.push(jsonData);
 				}
 			} catch (error) {
-				console.error('Defuddle: Error parsing schema.org data:', error);
+				// Silently skip malformed JSON-LD scripts
 				if (this.debug) {
+					console.error('Defuddle: Error parsing schema.org data:', error);
 					console.error('Defuddle: Problematic JSON content:', jsonContent);
 				}
 			}
