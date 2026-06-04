@@ -8,7 +8,9 @@ import {
 	TEST_ATTRIBUTES_SELECTOR,
 	ENTRY_POINT_ELEMENTS,
 	TEST_ATTRIBUTES,
-	FOOTNOTE_LIST_SELECTORS
+	FOOTNOTE_LIST_SELECTORS,
+	CONDITIONAL_VISIBLE_VARIANTS,
+	CONDITIONAL_VISIBLE_VARIANT_PREFIXES
 } from './constants';
 import { standardizeContent } from './standardize';
 import { standardizeFootnotes } from './elements/footnotes';
@@ -574,6 +576,35 @@ export class Defuddle {
 		});
 	}
 
+	// Determine whether a single class token represents an unconditionally hidden
+	// utility. Plain "hidden" and responsive/custom variants (e.g. "md:hidden",
+	// "not-machine:hidden") count as hidden. State-conditional variants (e.g.
+	// "empty:hidden", "group-hover:hidden", "aria-expanded:hidden") do not, since
+	// the element stays visible in the default rendered state.
+	private isHiddenUtilityClass(token: string): boolean {
+		if (token === 'hidden') {
+			return true;
+		}
+		if (!token.endsWith(':hidden')) {
+			return false;
+		}
+
+		// Inspect each variant segment that precedes the trailing ":hidden".
+		const variantPart = token.slice(0, -':hidden'.length);
+		const variants = variantPart.split(':');
+		for (const variant of variants) {
+			const base = variant.toLowerCase();
+			if (CONDITIONAL_VISIBLE_VARIANTS.has(base)) {
+				return false;
+			}
+			if (CONDITIONAL_VISIBLE_VARIANT_PREFIXES.some((prefix) => base.startsWith(prefix))) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
 	private removeHiddenElements(doc: Document, debugRemovals?: DebugRemoval[]) {
 		let count = 0;
 		const elementsToRemove = new Map<Element, string>();
@@ -613,12 +644,14 @@ export class Defuddle {
 			}
 
 			// Detect CSS framework hidden utilities (e.g. Tailwind's "hidden",
-			// "sm:hidden", "not-machine:hidden")
+			// "sm:hidden", "not-machine:hidden"). Skip conditional state variants
+			// like "empty:hidden" or "group-hover:hidden" that leave the element
+			// visible in the default rendered state.
 			const className = element.getAttribute('class') || '';
 			if (className) {
 				const tokens = className.split(/\s+/);
 				for (const token of tokens) {
-					if (token === 'hidden' || token.endsWith(':hidden')) {
+					if (this.isHiddenUtilityClass(token)) {
 						elementsToRemove.set(element, `class:${token}`);
 						count++;
 						break;
