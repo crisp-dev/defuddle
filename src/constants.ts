@@ -21,6 +21,60 @@ export const ENTRY_POINT_ELEMENTS = [
 ];
 
 export const MOBILE_WIDTH = 600;
+
+// Tailwind/CSS variant prefixes where a `:hidden` utility (e.g. `empty:hidden`,
+// `group-hover:hidden`) only hides the element when a runtime/state condition is
+// met. In the default rendered state these elements are VISIBLE, so they must not
+// be treated as hidden during extraction. This is distinct from responsive
+// (`md:hidden`) or custom (`not-machine:hidden`) variants, which are removed.
+// Matched either exactly or, for relationship variants, by prefix (see CONDITIONAL_VISIBLE_VARIANT_PREFIXES).
+export const CONDITIONAL_VISIBLE_VARIANTS = new Set([
+	'empty',
+	'peer',
+	'group',
+	'has',
+	'hover',
+	'focus',
+	'focus-within',
+	'focus-visible',
+	'active',
+	'visited',
+	'target',
+	'checked',
+	'disabled',
+	'enabled',
+	'open',
+	'required',
+	'optional',
+	'valid',
+	'invalid',
+	'in-range',
+	'out-of-range',
+	'placeholder-shown',
+	'autofill',
+	'read-only',
+	'read-write',
+	'indeterminate',
+	'default',
+	'first',
+	'last',
+	'only',
+	'odd',
+	'even',
+	'first-of-type',
+	'last-of-type',
+	'only-of-type'
+]);
+
+// Relationship/attribute variant prefixes (e.g. `peer-checked`, `group-hover`,
+// `aria-expanded`, `data-state`) that make a `:hidden` utility conditional.
+export const CONDITIONAL_VISIBLE_VARIANT_PREFIXES = [
+	'peer-',
+	'group-',
+	'has-',
+	'aria-',
+	'data-'
+];
 export const BLOCK_ELEMENTS = ['div', 'section', 'article', 'main', 'aside', 'header', 'footer', 'nav', 'content'];
 export const BLOCK_ELEMENTS_SELECTOR = BLOCK_ELEMENTS.join(',');
 export const BLOCK_ELEMENTS_SET = new Set(BLOCK_ELEMENTS);
