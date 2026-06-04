@@ -58,6 +58,7 @@ export declare class Defuddle {
     private _evaluateMediaQueries;
     private applyMobileStyles;
     private removeImages;
+    private isHiddenUtilityClass;
     private removeHiddenElements;
     private removeBySelector;
     private findSmallImages;

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ALLOWED_ATTRIBUTES_DEBUG = exports.ALLOWED_ATTRIBUTES = exports.ALLOWED_EMPTY_ELEMENTS = exports.FOOTNOTE_LIST_SELECTORS = exports.FOOTNOTE_INLINE_REFERENCES = exports.TEST_ATTRIBUTES_SELECTOR = exports.PARTIAL_SELECTORS_REGEX = exports.PARTIAL_SELECTORS = exports.TEST_ATTRIBUTES = exports.EXACT_SELECTORS = exports.INLINE_ELEMENTS = exports.PRESERVE_ELEMENTS = exports.BLOCK_ELEMENTS_SET = exports.BLOCK_ELEMENTS_SELECTOR = exports.BLOCK_ELEMENTS = exports.MOBILE_WIDTH = exports.ENTRY_POINT_ELEMENTS = void 0;
+exports.ALLOWED_ATTRIBUTES_DEBUG = exports.ALLOWED_ATTRIBUTES = exports.ALLOWED_EMPTY_ELEMENTS = exports.FOOTNOTE_LIST_SELECTORS = exports.FOOTNOTE_INLINE_REFERENCES = exports.TEST_ATTRIBUTES_SELECTOR = exports.PARTIAL_SELECTORS_REGEX = exports.PARTIAL_SELECTORS = exports.TEST_ATTRIBUTES = exports.EXACT_SELECTORS = exports.INLINE_ELEMENTS = exports.PRESERVE_ELEMENTS = exports.BLOCK_ELEMENTS_SET = exports.BLOCK_ELEMENTS_SELECTOR = exports.BLOCK_ELEMENTS = exports.CONDITIONAL_VISIBLE_VARIANT_PREFIXES = exports.CONDITIONAL_VISIBLE_VARIANTS = exports.MOBILE_WIDTH = exports.ENTRY_POINT_ELEMENTS = void 0;
 // Entry point elements
 // These are the elements that will be used to find the main content
 exports.ENTRY_POINT_ELEMENTS = [
@@ -23,6 +23,58 @@ exports.ENTRY_POINT_ELEMENTS = [
     'body' // ensures there is always a match
 ];
 exports.MOBILE_WIDTH = 600;
+// Tailwind/CSS variant prefixes where a `:hidden` utility (e.g. `empty:hidden`,
+// `group-hover:hidden`) only hides the element when a runtime/state condition is
+// met. In the default rendered state these elements are VISIBLE, so they must not
+// be treated as hidden during extraction. This is distinct from responsive
+// (`md:hidden`) or custom (`not-machine:hidden`) variants, which are removed.
+// Matched either exactly or, for relationship variants, by prefix (see CONDITIONAL_VISIBLE_VARIANT_PREFIXES).
+exports.CONDITIONAL_VISIBLE_VARIANTS = new Set([
+    'empty',
+    'peer',
+    'group',
+    'has',
+    'hover',
+    'focus',
+    'focus-within',
+    'focus-visible',
+    'active',
+    'visited',
+    'target',
+    'checked',
+    'disabled',
+    'enabled',
+    'open',
+    'required',
+    'optional',
+    'valid',
+    'invalid',
+    'in-range',
+    'out-of-range',
+    'placeholder-shown',
+    'autofill',
+    'read-only',
+    'read-write',
+    'indeterminate',
+    'default',
+    'first',
+    'last',
+    'only',
+    'odd',
+    'even',
+    'first-of-type',
+    'last-of-type',
+    'only-of-type'
+]);
+// Relationship/attribute variant prefixes (e.g. `peer-checked`, `group-hover`,
+// `aria-expanded`, `data-state`) that make a `:hidden` utility conditional.
+exports.CONDITIONAL_VISIBLE_VARIANT_PREFIXES = [
+    'peer-',
+    'group-',
+    'has-',
+    'aria-',
+    'data-'
+];
 exports.BLOCK_ELEMENTS = ['div', 'section', 'article', 'main', 'aside', 'header', 'footer', 'nav', 'content'];
 exports.BLOCK_ELEMENTS_SELECTOR = exports.BLOCK_ELEMENTS.join(',');
 exports.BLOCK_ELEMENTS_SET = new Set(exports.BLOCK_ELEMENTS);
