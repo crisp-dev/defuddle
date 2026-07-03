@@ -217,7 +217,13 @@ export const EXACT_SELECTORS = [
 	// 'relative-time', // see issue #136
 
 	// hidden
-	'[hidden]',
+	// Exclude tab panels: JS tab widgets (Elementor, Bootstrap, WooCommerce)
+	// toggle inactive panels with the `hidden` attribute, and some even leave
+	// `hidden="false"` on the *active* one. Since `[hidden]` matches on attribute
+	// presence (it's a boolean attr), the bare selector deleted real tab content.
+	// `role="tabpanel"` is the standard signal; the class fallbacks cover widgets
+	// that omit the role.
+	'[hidden]:not([role="tabpanel"]):not([class*="tab-content" i]):not([class*="tab-pane" i])',
 	'[aria-hidden="true"]:not([class*="math"])',
 	'[style*="display: none"]:not([class*="math"])',
 	'[style*="display:none"]:not([class*="math"])',
