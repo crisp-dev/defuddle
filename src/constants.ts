@@ -815,7 +815,12 @@ export const PARTIAL_SELECTORS = [
 	'taxonomy',
 //	'table-content',
 	'table-of-contents',
-	'tabs-',
+	// Tab *navigation/switcher* chrome only — NOT tab content panels.
+	// The old bare `tabs-` also matched content wrappers (e.g. Elementor's
+	// `elementor-tabs-content-wrapper`, `elementor-tab-content`, WooCommerce
+	// `woocommerce-tabs`), deleting real content. This regex only targets the
+	// clickable tab strip (nav/menu/list/switcher/etc.), matching `-`/`_` separators.
+	'(nav-tabs|tabs?[-_]+(nav|menu|link|list|bar|header|switch|toggle|control|button))',
 //	'teaser', Nature
 	'terminaltout',
 	'time-rubric',

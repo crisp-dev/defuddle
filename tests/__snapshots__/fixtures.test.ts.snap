@@ -2980,6 +2980,27 @@ This is the actual article content that follows the author section. The paper pr
 }
 `;
 
+exports[`Fixtures Snapshot Tests > 'issues--elementor-tab-content' — should match snapshot > issues--elementor-tab-content 1`] = `
+{
+  "author": "",
+  "content": "This release introduces a new licensing flow. Follow the steps in the tabs below to request or renew your license.
+
+Step 1: Request or renew
+
+Step 2: Configure the online environment
+
+Open the license portal and submit a request for the new version. Existing customers can renew from the same screen. Approval usually takes one business day.
+
+After approval, import the license into the online environment and confirm that the modules are activated. Restart the application to apply the changes.
+
+If any step fails, contact support with your license reference number.",
+  "published": "",
+  "site": "",
+  "title": "Release notes version 10.13",
+  "wordCount": 91,
+}
+`;
+
 exports[`Fixtures Snapshot Tests > 'math--katex' — should match snapshot > math--katex 1`] = `
 {
   "author": "Murray Bourne",
