@@ -61,12 +61,23 @@ export declare class Defuddle {
     private isHiddenUtilityClass;
     private removeHiddenElements;
     private removeBySelector;
+    /**
+     * A <form> that wraps the whole page rather than being an input form.
+     * ASP.NET WebForms marks these with __VIEWSTATE / __EVENTVALIDATION inputs.
+     */
+    private isPageWrapperForm;
     private findSmallImages;
     private removeSmallImages;
     private getElementIdentifier;
     private findMainContent;
     private findTableBasedContent;
     private findContentByScoring;
+    /**
+     * Whether to narrow from <body> to a scored element. Requires the element to
+     * hold most of the body's text (>= 60%, so it isn't a stray fragment) while
+     * leaving real noise outside it (>= 200 chars, so narrowing is worthwhile).
+     */
+    private isConfidentContentNarrowing;
     private getElementSelector;
     /**
      * Resolve relative URLs to absolute within a DOM element

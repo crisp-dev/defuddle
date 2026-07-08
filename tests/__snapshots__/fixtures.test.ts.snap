@@ -2980,6 +2980,29 @@ This is the actual article content that follows the author section. The paper pr
 }
 `;
 
+exports[`Fixtures Snapshot Tests > 'issues--aspnet-webforms-wrapper' — should match snapshot > issues--aspnet-webforms-wrapper 1`] = `
+{
+  "author": "",
+  "content": "## General Terms and Conditions of Sale
+
+**Article 1 - Scope of application.** These General Terms and Conditions of Sale apply, without restriction or reservation, to all sales concluded by the Seller to non-professional buyers wishing to acquire the products offered for sale by the Seller on the website. The main characteristics of the products are presented on the site, which the customer is required to read before ordering.
+
+**Article 2 - Prices.** The products are supplied at the prices in force shown on the site at the time the order is registered by the Seller. Prices are expressed in Euros, excluding and including tax. These rates are firm and non-revisable during their period of validity, but the Seller reserves the right to modify the prices at any time outside the period of validity.
+
+**Article 3 - Orders.** It is the responsibility of the customer to select on the site the products they wish to order. The offers of products are valid as long as they are visible on the site, within the limit of available stocks. The sale will only be considered valid after full payment of the price, and it is the customer's responsibility to verify the accuracy of the order.
+
+**Article 4 - Payment terms.** The price is paid by secure payment, by bank card or by bank transfer to the Seller's bank account. Payments made by the customer will only be considered final after actual collection of the sums due by the Seller. The Seller will not be required to deliver the products ordered if the customer does not pay the full price.
+
+**Article 5 - Deliveries.** The products ordered by the customer will be delivered within a period of seventy-two hours to the address indicated by the customer when ordering on the site. Delivery is made by transferring physical possession or control of the product to the customer, and the products ordered will be delivered in a single shipment except in special cases.
+
+**Article 6 - Transfer of ownership.** The transfer of ownership of the Seller's products will only be carried out after full payment of the price by the latter, regardless of the date of delivery of the said products, in accordance with the provisions of the applicable consumer code.",
+  "published": "",
+  "site": "",
+  "title": "Terms of Sale - Example Shop",
+  "wordCount": 375,
+}
+`;
+
 exports[`Fixtures Snapshot Tests > 'issues--elementor-tab-content' — should match snapshot > issues--elementor-tab-content 1`] = `
 {
   "author": "",
