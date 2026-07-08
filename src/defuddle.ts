@@ -758,6 +758,11 @@ export class Defuddle {
 			if (mainContent && el.contains(mainContent)) {
 				return;
 			}
+			// Keep ASP.NET page-wrapper forms — removing them deletes all content.
+			// Their boilerplate children are still removed by their own selectors.
+			if (el.tagName === 'FORM' && this.isPageWrapperForm(el)) {
+				return;
+			}
 			if (el.tagName === 'A' && el.closest('h1, h2, h3, h4, h5, h6')) {
 				return;
 			}
@@ -789,6 +794,16 @@ export class Defuddle {
 			total: elementsToRemove.size,
 			processingTime: `${(endTime - startTime).toFixed(2)}ms`
 		});
+	}
+
+	/**
+	 * A <form> that wraps the whole page rather than being an input form.
+	 * ASP.NET WebForms marks these with __VIEWSTATE / __EVENTVALIDATION inputs.
+	 */
+	private isPageWrapperForm(form: Element): boolean {
+		return !!form.querySelector(
+			'input[name="__VIEWSTATE"], input[name="__EVENTVALIDATION"], input[id="__VIEWSTATE"], input[id="__EVENTVALIDATION"]'
+		);
 	}
 
 	// Find small IMG and SVG elements
@@ -908,11 +923,17 @@ export class Defuddle {
 			})));
 		}
 
-		// If we only matched body, try table-based detection
+		// Only <body> matched: no semantic wrapper. Try table layouts, then
+		// scoring, before falling back to <body> (where cleanup can strip the
+		// content along with page-level wrappers like an ASP.NET <form>).
 		if (candidates.length === 1 && candidates[0].element.tagName.toLowerCase() === 'body') {
 			const tableContent = this.findTableBasedContent(doc);
 			if (tableContent) {
 				return tableContent;
+			}
+			const scoredContent = this.findContentByScoring(doc);
+			if (scoredContent && this.isConfidentContentNarrowing(scoredContent, candidates[0].element)) {
+				return scoredContent;
 			}
 		}
 
@@ -997,6 +1018,19 @@ export class Defuddle {
 		});
 
 		return candidates.length > 0 ? candidates.sort((a, b) => b.score - a.score)[0].element : null;
+	}
+
+	/**
+	 * Whether to narrow from <body> to a scored element. Requires the element to
+	 * hold most of the body's text (>= 60%, so it isn't a stray fragment) while
+	 * leaving real noise outside it (>= 200 chars, so narrowing is worthwhile).
+	 */
+	private isConfidentContentNarrowing(element: Element, body: Element): boolean {
+		const textLen = (el: Element) => (el.textContent || '').replace(/\s+/g, ' ').trim().length;
+		const bodyLen = textLen(body);
+		if (bodyLen === 0) return false;
+		const elementLen = textLen(element);
+		return (elementLen / bodyLen) >= 0.6 && (bodyLen - elementLen) >= 200;
 	}
 
 	private getElementSelector(element: Element): string {
