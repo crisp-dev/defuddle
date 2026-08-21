@@ -1,5 +1,7 @@
 export declare const ENTRY_POINT_ELEMENTS: string[];
 export declare const MOBILE_WIDTH = 600;
+export declare const FRAMER_SECTION_MIN_TEXT = 500;
+export declare const FRAMER_SECTION_MAX_LINK_RATIO = 0.5;
 export declare const CONDITIONAL_VISIBLE_VARIANTS: Set<string>;
 export declare const CONDITIONAL_VISIBLE_VARIANT_PREFIXES: string[];
 export declare const BLOCK_ELEMENTS: string[];

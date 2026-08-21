@@ -8,6 +8,7 @@ export declare class Defuddle {
     private _metaTags;
     private _metadata;
     private _mobileStyles;
+    private _isFramerPage;
     /**
      * Create a new Defuddle instance
      * @param doc - The document to parse
@@ -66,6 +67,18 @@ export declare class Defuddle {
      * ASP.NET WebForms marks these with __VIEWSTATE / __EVENTVALIDATION inputs.
      */
     private isPageWrapperForm;
+    /**
+     * Framer builds pages from components that render as <header>, so on a Framer
+     * site the tag carries none of its usual "site header" meaning — body copy is
+     * routinely wrapped in one. Cached because it is a whole-document property.
+     */
+    private isFramerPage;
+    /**
+     * A Framer <header> holding prose rather than navigation. Real headers and nav
+     * bars are mostly link text, so the link-to-text ratio separates the two; the
+     * length floor keeps this from rescuing small chrome like breadcrumbs.
+     */
+    private isFramerContentSection;
     private findSmallImages;
     private removeSmallImages;
     private getElementIdentifier;

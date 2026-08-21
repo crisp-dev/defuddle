@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ALLOWED_ATTRIBUTES_DEBUG = exports.ALLOWED_ATTRIBUTES = exports.ALLOWED_EMPTY_ELEMENTS = exports.FOOTNOTE_LIST_SELECTORS = exports.FOOTNOTE_INLINE_REFERENCES = exports.TEST_ATTRIBUTES_SELECTOR = exports.PARTIAL_SELECTORS_REGEX = exports.PARTIAL_SELECTORS = exports.TEST_ATTRIBUTES = exports.EXACT_SELECTORS = exports.INLINE_ELEMENTS = exports.PRESERVE_ELEMENTS = exports.BLOCK_ELEMENTS_SET = exports.BLOCK_ELEMENTS_SELECTOR = exports.BLOCK_ELEMENTS = exports.CONDITIONAL_VISIBLE_VARIANT_PREFIXES = exports.CONDITIONAL_VISIBLE_VARIANTS = exports.MOBILE_WIDTH = exports.ENTRY_POINT_ELEMENTS = void 0;
+exports.ALLOWED_ATTRIBUTES_DEBUG = exports.ALLOWED_ATTRIBUTES = exports.ALLOWED_EMPTY_ELEMENTS = exports.FOOTNOTE_LIST_SELECTORS = exports.FOOTNOTE_INLINE_REFERENCES = exports.TEST_ATTRIBUTES_SELECTOR = exports.PARTIAL_SELECTORS_REGEX = exports.PARTIAL_SELECTORS = exports.TEST_ATTRIBUTES = exports.EXACT_SELECTORS = exports.INLINE_ELEMENTS = exports.PRESERVE_ELEMENTS = exports.BLOCK_ELEMENTS_SET = exports.BLOCK_ELEMENTS_SELECTOR = exports.BLOCK_ELEMENTS = exports.CONDITIONAL_VISIBLE_VARIANT_PREFIXES = exports.CONDITIONAL_VISIBLE_VARIANTS = exports.FRAMER_SECTION_MAX_LINK_RATIO = exports.FRAMER_SECTION_MIN_TEXT = exports.MOBILE_WIDTH = exports.ENTRY_POINT_ELEMENTS = void 0;
 // Entry point elements
 // These are the elements that will be used to find the main content
 exports.ENTRY_POINT_ELEMENTS = [
@@ -23,6 +23,12 @@ exports.ENTRY_POINT_ELEMENTS = [
     'body' // ensures there is always a match
 ];
 exports.MOBILE_WIDTH = 600;
+// Framer renders ordinary page sections as <header>, so the `header` exact
+// selector would delete article bodies on Framer sites. A kept section must
+// clear this text floor and stay below this link-to-text ratio, which is what
+// separates prose from a nav bar or a title/breadcrumb block.
+exports.FRAMER_SECTION_MIN_TEXT = 500;
+exports.FRAMER_SECTION_MAX_LINK_RATIO = 0.5;
 // Tailwind/CSS variant prefixes where a `:hidden` utility (e.g. `empty:hidden`,
 // `group-hover:hidden`) only hides the element when a runtime/state condition is
 // met. In the default rendered state these elements are VISIBLE, so they must not
