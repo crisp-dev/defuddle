@@ -22,6 +22,13 @@ export const ENTRY_POINT_ELEMENTS = [
 
 export const MOBILE_WIDTH = 600;
 
+// Framer renders ordinary page sections as <header>, so the `header` exact
+// selector would delete article bodies on Framer sites. A kept section must
+// clear this text floor and stay below this link-to-text ratio, which is what
+// separates prose from a nav bar or a title/breadcrumb block.
+export const FRAMER_SECTION_MIN_TEXT = 500;
+export const FRAMER_SECTION_MAX_LINK_RATIO = 0.5;
+
 // Tailwind/CSS variant prefixes where a `:hidden` utility (e.g. `empty:hidden`,
 // `group-hover:hidden`) only hides the element when a runtime/state condition is
 // met. In the default rendered state these elements are VISIBLE, so they must not

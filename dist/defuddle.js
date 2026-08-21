@@ -648,6 +648,11 @@ class Defuddle {
             if (el.tagName === 'FORM' && this.isPageWrapperForm(el)) {
                 return;
             }
+            // Keep Framer content sections — Framer emits <header> for ordinary
+            // sections, so the article body itself often sits inside one.
+            if (el.tagName === 'HEADER' && this.isFramerContentSection(el)) {
+                return;
+            }
             if (el.tagName === 'A' && el.closest('h1, h2, h3, h4, h5, h6')) {
                 return;
             }
@@ -686,6 +691,33 @@ class Defuddle {
      */
     isPageWrapperForm(form) {
         return !!form.querySelector('input[name="__VIEWSTATE"], input[name="__EVENTVALIDATION"], input[id="__VIEWSTATE"], input[id="__EVENTVALIDATION"]');
+    }
+    /**
+     * Framer builds pages from components that render as <header>, so on a Framer
+     * site the tag carries none of its usual "site header" meaning — body copy is
+     * routinely wrapped in one. Cached because it is a whole-document property.
+     */
+    isFramerPage() {
+        if (this._isFramerPage === undefined) {
+            this._isFramerPage = !!this.doc.querySelector('[data-framer-hydrate-v2], meta[name="generator"][content^="Framer"]');
+        }
+        return this._isFramerPage;
+    }
+    /**
+     * A Framer <header> holding prose rather than navigation. Real headers and nav
+     * bars are mostly link text, so the link-to-text ratio separates the two; the
+     * length floor keeps this from rescuing small chrome like breadcrumbs.
+     */
+    isFramerContentSection(el) {
+        if (!this.isFramerPage() || !el.hasAttribute('data-framer-name')) {
+            return false;
+        }
+        const textLength = (el.textContent || '').trim().length;
+        if (textLength < constants_1.FRAMER_SECTION_MIN_TEXT) {
+            return false;
+        }
+        const linkLength = Array.from(el.querySelectorAll('a')).reduce((total, link) => total + (link.textContent || '').trim().length, 0);
+        return linkLength / textLength < constants_1.FRAMER_SECTION_MAX_LINK_RATIO;
     }
     // Find small IMG and SVG elements
     findSmallImages(doc) {

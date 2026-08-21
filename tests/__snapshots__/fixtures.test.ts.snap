@@ -3024,6 +3024,31 @@ If any step fails, contact support with your license reference number.",
 }
 `;
 
+exports[`Fixtures Snapshot Tests > 'issues--framer-header-section' — should match snapshot > issues--framer-header-section 1`] = `
+{
+  "author": "",
+  "content": "## Before you start
+
+A wheel that wobbles from side to side is almost never bent metal. In nearly every case the rim is being pulled off centre by spokes that have drifted out of even tension, and the fix is to bring them back into agreement with each other rather than to force the rim anywhere. Work slowly, and expect the whole job to take longer than you think it should the first few times.
+
+Set the wheel in a truing stand if the shop has one free. If not, flip the bike upside down and use the brake pads as your reference point instead. You want some fixed edge sitting close to the rim so that the gap between them tells you where the wobble is and how bad it gets.
+
+## Finding the wobble
+
+Spin the wheel and watch the gap, not the rim. Narrow the reference until it just grazes at the worst point, then stop the wheel there and mark that spot with a piece of tape. Keep narrowing and marking until you have found the two or three places that need attention. Most wheels have far fewer problem areas than they appear to when spinning.
+
+## Making the correction
+
+At each marked spot, tighten the spoke that pulls the rim away from your reference edge and loosen its neighbour on the opposite side by the same amount. A quarter turn is a large correction; an eighth is usually plenty. Turning only one spoke will move the rim but leave the tension uneven, and the wheel will drift back out within a few rides.
+
+Recheck after every pair of adjustments. When the gap stays even all the way round, pluck the spokes and listen: they should ring at roughly the same pitch. If a few sound noticeably dead, the wheel is straight but under tension, and it is worth bringing to one of the Thursday maintenance evenings before riding it hard.",
+  "published": "",
+  "site": "",
+  "title": "Truing a Wheel - Sparrow Bicycle Collective",
+  "wordCount": 323,
+}
+`;
+
 exports[`Fixtures Snapshot Tests > 'math--katex' — should match snapshot > math--katex 1`] = `
 {
   "author": "Murray Bourne",
