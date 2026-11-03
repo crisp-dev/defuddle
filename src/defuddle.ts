@@ -18,7 +18,7 @@ import { standardizeContent } from './standardize';
 import { standardizeFootnotes } from './elements/footnotes';
 import { ContentScorer, ContentScore } from './scoring';
 import { textPreview } from './utils';
-import { parseHTML, serializeHTML, decodeHTMLEntities, isDangerousUrl } from './utils/dom';
+import { parseHTML, serializeHTML, decodeHTMLEntities, isDangerousUrl, unwrapDangerousLinks, stripEventHandlers, removeUnsafeElements, parseSrcset } from './utils/dom';
 
 interface StyleChange {
 	selector: string;
@@ -134,7 +134,8 @@ export class Defuddle {
 				result.wordCount = this.countWords(contentHtml);
 			} else {
 				this._log('Using schema.org text as content (DOM element not found)');
-				result.content = schemaText;
+				// Route through resolveContentUrls so dangerous links are unwrapped.
+				result.content = this.resolveContentUrls(schemaText);
 				result.wordCount = this.countWords(schemaText);
 			}
 		}
@@ -271,6 +272,11 @@ export class Defuddle {
 
 		// Now resolve URLs in the text content
 		this.resolveRelativeUrls(bestMatch);
+		// Unwrap after URL resolution: new URL() normalizes schemes
+		// (e.g. "JavaScript:" → "javascript:").
+		removeUnsafeElements(bestMatch);
+		unwrapDangerousLinks(bestMatch);
+		stripEventHandlers(bestMatch);
 		let html = serializeHTML(bestMatch);
 
 		if (imageSrc) {
@@ -293,21 +299,12 @@ export class Defuddle {
 
 		// Parse srcset entries: each ends with a width descriptor (e.g. "424w")
 		// URLs may contain commas (e.g. Substack CDN), so split on width descriptors
-		const entryPattern = /(.+?)\s+(\d+(?:\.\d+)?)w/g;
 		let bestUrl = '';
 		let bestWidth = 0;
-		let match;
-		let lastIndex = 0;
-
-		while ((match = entryPattern.exec(srcset)) !== null) {
-			let url = match[1].trim();
-			if (lastIndex > 0) {
-				url = url.replace(/^,\s*/, '');
-			}
-			lastIndex = entryPattern.lastIndex;
-
-			const width = parseFloat(match[2]);
-			if (url && width > bestWidth) {
+		for (const { url, descriptor } of parseSrcset(srcset)) {
+			if (!descriptor.endsWith('w')) continue;
+			const width = parseFloat(descriptor);
+			if (width > bestWidth) {
 				bestWidth = width;
 				bestUrl = url;
 			}
@@ -476,6 +473,13 @@ export class Defuddle {
 
 			// Resolve relative URLs to absolute
 			this.resolveRelativeUrls(mainContent);
+
+			// Remove unsafe elements, unwrap dangerous links and strip event
+			// handlers, regardless of pipeline toggles. Must run after URL
+			// resolution, which normalizes schemes.
+			removeUnsafeElements(mainContent);
+			unwrapDangerousLinks(mainContent);
+			stripEventHandlers(mainContent);
 
 			const content = mainContent.outerHTML;
 			const endTime = Date.now();
@@ -1125,19 +1129,9 @@ export class Defuddle {
 			if (srcset) {
 				// Parse srcset using width/density descriptors as delimiters,
 				// not commas — URLs may contain commas (e.g. CDN transform params)
-				const entryPattern = /(.+?)\s+(\d+(?:\.\d+)?[wx])/g;
-				const entries: string[] = [];
-				let match;
-				let lastIdx = 0;
-
-				while ((match = entryPattern.exec(srcset)) !== null) {
-					let url = match[1].trim();
-					if (lastIdx > 0) {
-						url = url.replace(/^,\s*/, '');
-					}
-					lastIdx = entryPattern.lastIndex;
-					entries.push(`${resolve(url)} ${match[2]}`);
-				}
+				const entries = parseSrcset(srcset).map(
+					({ url, descriptor }) => `${resolve(url)} ${descriptor}`
+				);
 
 				if (entries.length > 0) {
 					el.setAttribute('srcset', entries.join(', '));
@@ -1335,12 +1329,12 @@ export class Defuddle {
 	 * Resolve relative URLs in an HTML string
 	 */
 	private resolveContentUrls(html: string): string {
-		const baseUrl = this.options.url || this.doc.URL;
-		if (!baseUrl) return html;
-
 		const container = this.doc.createElement('div');
 		container.appendChild(parseHTML(this.doc, html));
 		this.resolveRelativeUrls(container);
+		removeUnsafeElements(container);
+		unwrapDangerousLinks(container);
+		stripEventHandlers(container);
 		return serializeHTML(container);
 	}
 

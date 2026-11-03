@@ -72,7 +72,11 @@ Debug mode preserves class/id/data-* attributes and skips div flattening. Use `c
 ### Rules
 
 - **Never use `innerHTML` directly.** Always use `parseHTML()` from `src/utils/dom.ts` which parses via `<template>` elements (no script execution, no resource loading).
-- **Sanitize URLs** — `javascript:` and `data:text/html` must be stripped from `href`/`src` attributes. `srcdoc` must be stripped from iframes. `on*` event handler attributes must be removed. See `sanitizeContent()` in `src/defuddle.ts`.
+- **Output sanitization** — always applied to returned content (main content, fallbacks, schema.org text), after URL resolution and regardless of pipeline toggles. See `src/utils/dom.ts`:
+  - `removeUnsafeElements()` removes `script` (except `type="math/*"`), `style`, `noscript`, `template`, `frame`, `frameset`, `object`, `embed`, `applet`, `base`, `meta` and `link`. Iframes are handled by the selector allowlist.
+  - `unwrapDangerousLinks()` unwraps links to `javascript:`, `vbscript:` or non-image `data:` URLs (link content kept, empty links removed).
+  - `stripEventHandlers()` removes all `on*` attributes, including on SVG and inside `<foreignObject>`.
+- **Markdown link injection** — escape page-derived values interpolated by custom turndown rules: text with `turndownService.escape`, URLs with `escapeMarkdownUrl`, LaTeX with `safeLatex`, ids with `safeIdentifier`. Regression tests live in `tests/security.test.ts`.
 
 ### Common pitfalls
 

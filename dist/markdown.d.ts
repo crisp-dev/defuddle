@@ -25,6 +25,12 @@ type GenericElement = {
 };
 export declare function isGenericElement(node: unknown): node is GenericElement;
 export declare function asGenericElement(node: any): GenericElement;
+/**
+ * Escape a URL for use as a markdown link/image destination. Parentheses
+ * are backslash-escaped (so `](` can never appear unescaped and open a new
+ * link) and whitespace is percent-encoded (so the destination can't end early).
+ */
+export declare function escapeMarkdownUrl(url: string): string;
 export declare function createMarkdownContent(content: string, url: string): string;
 export declare function toMarkdown(result: DefuddleResponse, options: DefuddleOptions, url: string): void;
 export {};

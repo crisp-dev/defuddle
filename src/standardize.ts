@@ -191,14 +191,8 @@ export function standardizeContent(element: Element, metadata: DefuddleMetadata,
 		// Unwrap bare spans (no attributes remaining after stripping)
 		unwrapBareSpans(element);
 
-		// Unwrap javascript: links — keep text, remove the link
-		const jsLinks = Array.from(element.querySelectorAll('a[href^="javascript:"]'));
-		jsLinks.forEach(link => {
-			while (link.firstChild) {
-				link.parentNode?.insertBefore(link.firstChild, link);
-			}
-			link.remove();
-		});
+		// Dangerous links (javascript:, etc.) are unwrapped by
+		// unwrapDangerousLinks(), which always runs after URL resolution.
 
 		// Unwrap anchor links that wrap headings (e.g. clickable section headers)
 		const headingAnchors = Array.from(element.querySelectorAll('a[href^="#"]'));

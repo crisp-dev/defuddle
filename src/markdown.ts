@@ -37,6 +37,41 @@ export function asGenericElement(node: any): GenericElement {
 	return node as unknown as GenericElement;
 }
 
+/*
+ * Markdown link-injection safety: page-derived values interpolated by
+ * custom rules must not be able to create new markdown links.
+ */
+
+/**
+ * Escape a URL for use as a markdown link/image destination. Parentheses
+ * are backslash-escaped (so `](` can never appear unescaped and open a new
+ * link) and whitespace is percent-encoded (so the destination can't end early).
+ */
+export function escapeMarkdownUrl(url: string): string {
+	return url
+		.replace(/\s/g, c => encodeURIComponent(c))
+		.replace(/([()])/g, '\\$1');
+}
+
+/** Escape a link/image title for use inside a double-quoted markdown title. */
+function escapeMarkdownTitle(title: string): string {
+	return title.replace(/\s+/g, ' ').replace(/(["\\])/g, '\\$1');
+}
+
+/** Keep only characters that are safe in identifiers (footnote ids, callout types, code languages). */
+function safeIdentifier(value: string): string {
+	return value.replace(/[^\w.:+#-]/g, '');
+}
+
+/**
+ * Neutralize LaTeX taken from page attributes before inlining it between
+ * `$` delimiters: break `](` / `]:` so it can't form markdown links or link
+ * definitions, without changing how it renders as math.
+ */
+function safeLatex(latex: string): string {
+	return latex.replace(/\](?=[(:])/g, '] ');
+}
+
 
 export function createMarkdownContent(content: string, url: string) {
 	const footnotes: { [key: string]: string } = {};
@@ -47,6 +82,33 @@ export function createMarkdownContent(content: string, url: string) {
 		codeBlockStyle: 'fenced',
 		emDelimiter: '*',
 		preformattedCode: true,
+	});
+
+	const escapeText = (text: string) => turndownService.escape(text);
+
+	const imageMarkdown = (alt: string, src: string, title?: string | null): string => {
+		if (!src) return '';
+		const titlePart = title ? ` "${escapeMarkdownTitle(title)}"` : '';
+		return `![${escapeText(alt.replace(/\s+/g, ' '))}](${escapeMarkdownUrl(src)}${titlePart})`;
+	};
+
+	turndownService.addRule('inlineLinkSafe', {
+		filter: (node) => node.nodeName === 'A' && !!(node as Element).getAttribute('href'),
+		replacement: (content, node) => {
+			const el = node as Element;
+			const href = escapeMarkdownUrl(el.getAttribute('href') || '');
+			const title = el.getAttribute('title');
+			const titlePart = title ? ` "${escapeMarkdownTitle(title)}"` : '';
+			return `[${content}](${href}${titlePart})`;
+		}
+	});
+
+	turndownService.addRule('imageSafe', {
+		filter: 'img',
+		replacement: (content, node) => {
+			const el = node as Element;
+			return imageMarkdown(el.getAttribute('alt') || '', el.getAttribute('src') || '', el.getAttribute('title'));
+		}
 	});
 
 	turndownService.addRule('table', {
@@ -255,14 +317,14 @@ export function createMarkdownContent(content: string, url: string) {
 					const leftSpace = (!isStartOfLine && !/[\s$]/.test(prevChar)) ? ' ' : '';
 					const rightSpace = (!isEndOfLine && !/[\s$]/.test(nextChar)) ? ' ' : '';
 
-					return `${leftSpace}$${latex}$${rightSpace}`;
+					return `${leftSpace}$${safeLatex(latex)}$${rightSpace}`;
 				});
 
 				// Convert the processed caption content to markdown
 				const captionMarkdown = turndownService.turndown(captionContent);
 				
 				// Combine tag and processed caption
-				caption = `${tagText} ${captionMarkdown}`.trim();
+				caption = `${escapeText(tagText || '')} ${captionMarkdown}`.trim();
 			}
 
 			// Handle references in the caption
@@ -270,7 +332,7 @@ export function createMarkdownContent(content: string, url: string) {
 				return `[${text}](${href})`;
 			});
 
-			return `![${alt}](${src})\n\n${caption}\n\n`;
+			return `${imageMarkdown(alt, src)}\n\n${caption}\n\n`;
 		}
 	});
 
@@ -290,17 +352,17 @@ export function createMarkdownContent(content: string, url: string) {
 			if (src) {
 				const youtubeMatch = src.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com|youtube-nocookie\.com|youtu\.be)\/(?:embed\/|watch\?v=)?([a-zA-Z0-9_-]+)/);
 				if (youtubeMatch && youtubeMatch[1]) {
-					return `\n![](https://www.youtube.com/watch?v=${youtubeMatch[1]})\n`;
+					return `\n${imageMarkdown('', `https://www.youtube.com/watch?v=${youtubeMatch[1]}`)}\n`;
 				}
 				// Direct URL: /user/status/id
 				const tweetDirectMatch = src.match(/(?:https?:\/\/)?(?:www\.)?(?:twitter\.com|x\.com)\/([^/]+)\/status\/([0-9]+)/);
 				if (tweetDirectMatch) {
-					return `\n![](https://x.com/${tweetDirectMatch[1]}/status/${tweetDirectMatch[2]})\n`;
+					return `\n${imageMarkdown('', `https://x.com/${tweetDirectMatch[1]}/status/${tweetDirectMatch[2]}`)}\n`;
 				}
 				// Platform embed: ?id=
 				const tweetEmbedMatch = src.match(/(?:https?:\/\/)?(?:platform\.)?twitter\.com\/embed\/Tweet\.html\?.*?id=([0-9]+)/);
 				if (tweetEmbedMatch) {
-					return `\n![](https://x.com/i/status/${tweetEmbedMatch[1]})\n`;
+					return `\n${imageMarkdown('', `https://x.com/i/status/${tweetEmbedMatch[1]}`)}\n`;
 				}
 			}
 			return content;
@@ -353,9 +415,9 @@ export function createMarkdownContent(content: string, url: string) {
 			// Construct the new markdown
 			let markdown = `${headingContent}\n\n${remainingContent}\n\n`;
 			if (href) {
-				markdown += `[View original](${href})`;
+				markdown += `[View original](${escapeMarkdownUrl(href)})`;
 				if (title) {
-					markdown += ` "${title}"`;
+					markdown += ` "${escapeText(title)}"`;
 				}
 			}
 			
@@ -394,7 +456,7 @@ export function createMarkdownContent(content: string, url: string) {
 			if (isGenericElement(node)) {
 				const id = node.getAttribute('id');
 				if (node.nodeName === 'SUP' && id !== null && id.startsWith('fnref:')) {
-					const primaryNumber = id.replace('fnref:', '').split('-')[0];
+					const primaryNumber = safeIdentifier(id.replace('fnref:', '').split('-')[0]);
 					return `[^${primaryNumber}]`;
 				}
 			}
@@ -441,7 +503,7 @@ export function createMarkdownContent(content: string, url: string) {
 					const referenceContent = turndownService.turndown(serializeHTML(li));
 					// Remove the backlink from the footnote content
 					const cleanedContent = referenceContent.replace(/\s*↩︎$/, '').trim();
-					return `[^${id?.toLowerCase()}]: ${cleanedContent}`;
+					return `[^${safeIdentifier(id?.toLowerCase() || '')}]: ${cleanedContent}`;
 				}
 				return '';
 			});
@@ -484,11 +546,11 @@ export function createMarkdownContent(content: string, url: string) {
 			const codeElement = node.querySelector('code');
 			if (!codeElement || !isGenericElement(codeElement)) return content;
 			
-			const language = codeElement.getAttribute('data-lang')
+			const language = safeIdentifier(codeElement.getAttribute('data-lang')
 				|| codeElement.getAttribute('data-language')
 				|| codeElement.getAttribute('class')?.match(/language-(\w+)/)?.[1]
 				|| node.getAttribute('data-language')
-				|| '';
+				|| '');
 			const code = codeElement.textContent || '';
 			
 			// Clean up the content and escape backticks
@@ -514,7 +576,7 @@ export function createMarkdownContent(content: string, url: string) {
 			let latex = extractLatex(node);
 
 			// Remove leading and trailing whitespace
-			latex = latex.trim();
+			latex = safeLatex(latex.trim());
 
 			// Check if the math element is within a table
 			const isInTable = typeof node.closest === 'function' ? node.closest('table') !== null : false;
@@ -569,6 +631,7 @@ export function createMarkdownContent(content: string, url: string) {
 			if (!latex) {
 				latex = node.textContent?.trim() || '';
 			}
+			latex = safeLatex(latex);
 
 			// Determine if it's an inline formula
 			const mathElement = node.querySelector('.katex-mathml math');
@@ -597,7 +660,7 @@ export function createMarkdownContent(content: string, url: string) {
 			// Get alert type from the class (e.g., markdown-alert-note -> NOTE)
 			const alertClasses = Array.from(node.classList ? Object.keys(node.classList) : []);
 			const typeClass = alertClasses.find(c => c.startsWith('markdown-alert-') && c !== 'markdown-alert');
-			const type = typeClass ? typeClass.replace('markdown-alert-', '').toUpperCase() : 'NOTE';
+			const type = safeIdentifier(typeClass ? typeClass.replace('markdown-alert-', '').toUpperCase() : 'NOTE');
 
 			// Find the title element and content
 			const titleElement = node.querySelector('.markdown-alert-title');
@@ -606,7 +669,7 @@ export function createMarkdownContent(content: string, url: string) {
 			// Extract content, removing the title from it if present
 			let alertContent = content;
 			if (titleElement && isGenericElement(titleElement) && titleElement.textContent) {
-				alertContent = contentElement && isGenericElement(contentElement) ? contentElement.textContent || '' : content.replace(titleElement.textContent, '');
+				alertContent = contentElement && isGenericElement(contentElement) ? escapeText(contentElement.textContent || '') : content.replace(titleElement.textContent, '');
 			}
 
 			// Format as Obsidian callout
@@ -625,7 +688,7 @@ export function createMarkdownContent(content: string, url: string) {
 		},
 		replacement: (content, node) => {
 			if (!isGenericElement(node)) return content;
-			const type = node.getAttribute('data-callout') || 'note';
+			const type = safeIdentifier(node.getAttribute('data-callout') || '') || 'note';
 			const title = type.charAt(0).toUpperCase() + type.slice(1);
 
 			const lines = content.trim().split('\n');
@@ -644,7 +707,8 @@ export function createMarkdownContent(content: string, url: string) {
 			if (alttext) {
 				// Check if it's an inline or block equation
 				const isInline = mathElement.closest('.ltx_eqn_inline') !== null;
-				return isInline ? `$${alttext.trim()}$` : `\n$$\n${alttext.trim()}\n$$`;
+				const latex = safeLatex(alttext.trim());
+				return isInline ? `$${latex}$` : `\n$$\n${latex}\n$$`;
 			}
 			return '';
 		}).join('\n\n');

@@ -110,7 +110,8 @@ class Defuddle {
             }
             else {
                 this._log('Using schema.org text as content (DOM element not found)');
-                result.content = schemaText;
+                // Route through resolveContentUrls so dangerous links are unwrapped.
+                result.content = this.resolveContentUrls(schemaText);
                 result.wordCount = this.countWords(schemaText);
             }
         }
@@ -243,6 +244,11 @@ class Defuddle {
         }
         // Now resolve URLs in the text content
         this.resolveRelativeUrls(bestMatch);
+        // Unwrap after URL resolution: new URL() normalizes schemes
+        // (e.g. "JavaScript:" → "javascript:").
+        (0, dom_1.removeUnsafeElements)(bestMatch);
+        (0, dom_1.unwrapDangerousLinks)(bestMatch);
+        (0, dom_1.stripEventHandlers)(bestMatch);
         let html = (0, dom_1.serializeHTML)(bestMatch);
         if (imageSrc) {
             const img = this.doc.createElement('img');
@@ -262,19 +268,13 @@ class Defuddle {
             return img.getAttribute('src') || '';
         // Parse srcset entries: each ends with a width descriptor (e.g. "424w")
         // URLs may contain commas (e.g. Substack CDN), so split on width descriptors
-        const entryPattern = /(.+?)\s+(\d+(?:\.\d+)?)w/g;
         let bestUrl = '';
         let bestWidth = 0;
-        let match;
-        let lastIndex = 0;
-        while ((match = entryPattern.exec(srcset)) !== null) {
-            let url = match[1].trim();
-            if (lastIndex > 0) {
-                url = url.replace(/^,\s*/, '');
-            }
-            lastIndex = entryPattern.lastIndex;
-            const width = parseFloat(match[2]);
-            if (url && width > bestWidth) {
+        for (const { url, descriptor } of (0, dom_1.parseSrcset)(srcset)) {
+            if (!descriptor.endsWith('w'))
+                continue;
+            const width = parseFloat(descriptor);
+            if (width > bestWidth) {
                 bestWidth = width;
                 bestUrl = url;
             }
@@ -402,6 +402,12 @@ class Defuddle {
             }
             // Resolve relative URLs to absolute
             this.resolveRelativeUrls(mainContent);
+            // Remove unsafe elements, unwrap dangerous links and strip event
+            // handlers, regardless of pipeline toggles. Must run after URL
+            // resolution, which normalizes schemes.
+            (0, dom_1.removeUnsafeElements)(mainContent);
+            (0, dom_1.unwrapDangerousLinks)(mainContent);
+            (0, dom_1.stripEventHandlers)(mainContent);
             const content = mainContent.outerHTML;
             const endTime = Date.now();
             const result = Object.assign(Object.assign({ content }, metadata), { wordCount: this.countWords(content), parseTime: Math.round(endTime - startTime), metaTags: pageMetaTags });
@@ -962,18 +968,7 @@ class Defuddle {
             if (srcset) {
                 // Parse srcset using width/density descriptors as delimiters,
                 // not commas — URLs may contain commas (e.g. CDN transform params)
-                const entryPattern = /(.+?)\s+(\d+(?:\.\d+)?[wx])/g;
-                const entries = [];
-                let match;
-                let lastIdx = 0;
-                while ((match = entryPattern.exec(srcset)) !== null) {
-                    let url = match[1].trim();
-                    if (lastIdx > 0) {
-                        url = url.replace(/^,\s*/, '');
-                    }
-                    lastIdx = entryPattern.lastIndex;
-                    entries.push(`${resolve(url)} ${match[2]}`);
-                }
+                const entries = (0, dom_1.parseSrcset)(srcset).map(({ url, descriptor }) => `${resolve(url)} ${descriptor}`);
                 if (entries.length > 0) {
                     el.setAttribute('srcset', entries.join(', '));
                 }
@@ -1160,12 +1155,12 @@ class Defuddle {
      * Resolve relative URLs in an HTML string
      */
     resolveContentUrls(html) {
-        const baseUrl = this.options.url || this.doc.URL;
-        if (!baseUrl)
-            return html;
         const container = this.doc.createElement('div');
         container.appendChild((0, dom_1.parseHTML)(this.doc, html));
         this.resolveRelativeUrls(container);
+        (0, dom_1.removeUnsafeElements)(container);
+        (0, dom_1.unwrapDangerousLinks)(container);
+        (0, dom_1.stripEventHandlers)(container);
         return (0, dom_1.serializeHTML)(container);
     }
     _extractSchemaOrgData(doc) {
