@@ -23,6 +23,16 @@ export declare function escapeHtml(text: string): string;
  * Strips whitespace and control characters before checking.
  */
 export declare function isDangerousUrl(url: string): boolean;
+export interface SrcsetEntry {
+    url: string;
+    descriptor: string;
+}
+/**
+ * Parse a srcset attribute in linear time. Width/density descriptors are
+ * used as entry delimiters rather than commas, because CDN URLs may contain
+ * commas (e.g. `,w_852,c_limit`). Entries without a descriptor are ignored.
+ */
+export declare function parseSrcset(srcset: string): SrcsetEntry[];
 /**
  * Check if an element belongs directly to an ancestor table,
  * not to an intervening nested TABLE.

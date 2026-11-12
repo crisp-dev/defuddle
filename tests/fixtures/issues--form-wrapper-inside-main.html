@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="fr">
+
+<head>
+	<meta charset="utf-8">
+	<title>Example Product - Multi-user edition</title>
+</head>
+
+<body>
+	<!-- Homegrown PHP CMS using a postback style: the whole page body sits in a
+	     <form> INSIDE <main>, with hidden action fields and buttons but no text
+	     inputs and no framework marker (__VIEWSTATE etc.). <main> is correctly
+	     picked as the content root, so the 'form' exact selector used to remove
+	     everything. The form must be kept; its buttons must still be removed. -->
+	<header class="site-top">
+		<form name="frmSeek" id="frmSeek" method="post" action="/dynamic/search.php">
+			<input type="text" name="q" placeholder="Search">
+			<button type="submit">OK</button>
+		</form>
+		<nav>
+			<a href="/">Home</a>
+			<a href="/products">Products</a>
+			<a href="/support">Support</a>
+		</nav>
+	</header>
+
+	<div class="backgen">
+		<main id="mainpart">
+			<form name="frmInfos" id="frmInfos" method="POST" action="">
+				<input type="hidden" name="Haction" value="">
+				<input type="hidden" name="itemid" value="14">
+				<div class="banner">
+					<h1>Example Product multi-user edition</h1>
+					<div class="cart-btn">
+						<button type="button" class="divbtn">Shop</button>
+					</div>
+					<div class="intro">
+						Share your Example Product setup with your whole team and work together on your
+						management and information system, from incoming calls in the CRM to the yearly
+						balance sheet in accounting.
+					</div>
+				</div>
+
+				<div class="grid">
+					<p>The networked offer is counted in users who connect and work at the same time.</p>
+					<p>The product is not licensed per computer, nor per named user, but per simultaneous
+						access to the application. These are called tokens or concurrent sessions.</p>
+					<h2>Network edition from 30 EUR per month and per concurrent user</h2>
+					<p>This offer is based on the most complete pack, including every option: general,
+						analytical and budget accounting, sales and purchasing, suppliers and stock, CRM and
+						payroll, all utilities, up to 25 separate companies, all updates and technical support.</p>
+					<p>If you already have a single-computer subscription, it will be cancelled at no cost when
+						you subscribe to the multi-user edition, without affecting your data or settings.</p>
+					<table>
+						<tbody>
+							<tr>
+								<td><strong>Network subscription plans</strong></td>
+								<td><strong>Monthly</strong></td>
+								<td><strong>Yearly</strong></td>
+							</tr>
+							<tr>
+								<td>Pack with 2 sessions</td>
+								<td>70 EUR / month <a href="javascript:addToCart(1)">Subscribe</a></td>
+								<td>700 EUR / year <a href="javascript:addToCart(2)">Subscribe</a></td>
+							</tr>
+							<tr>
+								<td>Pack with 3 sessions</td>
+								<td>105 EUR / month <a href="javascript:addToCart(3)">Subscribe</a></td>
+								<td>1050 EUR / year <a href="javascript:addToCart(4)">Subscribe</a></td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</form>
+		</main>
+	</div>
+
+	<footer>
+		<p>Example Company - All rights reserved</p>
+	</footer>
+</body>
+
+</html>

@@ -63,10 +63,17 @@ export declare class Defuddle {
     private removeHiddenElements;
     private removeBySelector;
     /**
-     * A <form> that wraps the whole page rather than being an input form.
-     * ASP.NET WebForms marks these with __VIEWSTATE / __EVENTVALIDATION inputs.
+     * Why a <form> wraps the page content rather than being an input form, or null.
+     *
+     * Postback-style stacks (ASP.NET WebForms, JSF, Oracle APEX, Lotus Domino, and
+     * many homegrown PHP/classic-ASP CMSs) wrap the whole page in one <form> so any
+     * control can submit page state. Frameworks whose state field only appears on
+     * the page-level form are recognised by it (JSF is not: its ViewState field is
+     * in every <h:form>). Anything else is recognised structurally: the form holds
+     * most of the content's readable text. Search, newsletter and comment forms hold
+     * little text of their own (labels and buttons don't count), so they still go.
      */
-    private isPageWrapperForm;
+    private pageWrapperFormRule;
     /**
      * Framer builds pages from components that render as <header>, so on a Framer
      * site the tag carries none of its usual "site header" meaning — body copy is

@@ -2980,6 +2980,29 @@ This is the actual article content that follows the author section. The paper pr
 }
 `;
 
+exports[`Fixtures Snapshot Tests > 'issues--article-with-input-forms' — should match snapshot > issues--article-with-input-forms 1`] = `
+{
+  "author": "",
+  "content": "## How to store fresh herbs
+
+Soft herbs such as parsley, cilantro and dill keep best when treated like a bunch of flowers. Trim the stems, stand them in a jar with an inch of water and cover loosely with a bag before putting them in the fridge.
+
+Hardy herbs such as rosemary, thyme and sage prefer to stay dry. Wrap them in a slightly damp paper towel, place them in a container and store them in the vegetable drawer.
+
+Basil is the exception: it dislikes the cold and should be kept on the counter, away from direct sunlight, with its stems in water. Change the water every couple of days.
+
+## Freezing herbs
+
+For longer storage, chop the herbs, pack them into an ice cube tray, cover with olive oil and freeze. The cubes can go straight into soups, sauces and stews.
+
+Dried herbs lose their flavour within a year, so buy them in small quantities and keep them in airtight jars away from the heat of the stove.",
+  "published": "",
+  "site": "",
+  "title": "How to Store Fresh Herbs - Example Kitchen",
+  "wordCount": 168,
+}
+`;
+
 exports[`Fixtures Snapshot Tests > 'issues--aspnet-webforms-wrapper' — should match snapshot > issues--aspnet-webforms-wrapper 1`] = `
 {
   "author": "",
@@ -3024,6 +3047,34 @@ If any step fails, contact support with your license reference number.",
 }
 `;
 
+exports[`Fixtures Snapshot Tests > 'issues--form-wrapper-inside-main' — should match snapshot > issues--form-wrapper-inside-main 1`] = `
+{
+  "author": "",
+  "content": "## Example Product multi-user edition
+
+Share your Example Product setup with your whole team and work together on your management and information system, from incoming calls in the CRM to the yearly balance sheet in accounting.
+
+The networked offer is counted in users who connect and work at the same time.
+
+The product is not licensed per computer, nor per named user, but per simultaneous access to the application. These are called tokens or concurrent sessions.
+
+## Network edition from 30 EUR per month and per concurrent user
+
+This offer is based on the most complete pack, including every option: general, analytical and budget accounting, sales and purchasing, suppliers and stock, CRM and payroll, all utilities, up to 25 separate companies, all updates and technical support.
+
+If you already have a single-computer subscription, it will be cancelled at no cost when you subscribe to the multi-user edition, without affecting your data or settings.
+
+| **Network subscription plans** | **Monthly** | **Yearly** |
+| --- | --- | --- |
+| Pack with 2 sessions | 70 EUR / month Subscribe | 700 EUR / year Subscribe |
+| Pack with 3 sessions | 105 EUR / month Subscribe | 1050 EUR / year Subscribe |",
+  "published": "",
+  "site": "",
+  "title": "Example Product - Multi-user edition",
+  "wordCount": 184,
+}
+`;
+
 exports[`Fixtures Snapshot Tests > 'issues--framer-header-section' — should match snapshot > issues--framer-header-section 1`] = `
 {
   "author": "",
@@ -3046,6 +3097,56 @@ Recheck after every pair of adjustments. When the gap stays even all the way rou
   "site": "",
   "title": "Truing a Wheel - Sparrow Bicycle Collective",
   "wordCount": 323,
+}
+`;
+
+exports[`Fixtures Snapshot Tests > 'issues--jsf-viewstate-wrapper' — should match snapshot > issues--jsf-viewstate-wrapper 1`] = `
+{
+  "author": "",
+  "content": "## Loan simulator
+
+Use this simulator to estimate the monthly payments of a personal loan. The results are given for information only and do not constitute a binding offer from the bank.
+
+The rate shown depends on the amount borrowed and on the duration of the loan. Insurance is optional and is not included in the estimate below.
+
+Once your simulation is complete, an advisor can contact you to discuss the options that best match your situation and to prepare a personalised offer.",
+  "published": "",
+  "site": "",
+  "title": "Loan Simulator - Example Bank",
+  "wordCount": 82,
+}
+`;
+
+exports[`Fixtures Snapshot Tests > 'issues--nested-html-document' — should match snapshot > issues--nested-html-document 1`] = `
+{
+  "author": "",
+  "content": "## Example Patio Door
+
+A sturdy patio door built from a six chamber profile with three seals. It keeps the heat in during winter and the noise out all year round, and it fits both new builds and renovations without extra work on the frame.
+
+- Installation depth 82 mm
+- Sound insulation up to 46 dB
+- Delivery in about five to eight weeks
+
+Noise protection
+
+★ ★ ★ ★ ★
+
+Thermal insulation
+
+★ ★ ★ ★ ★
+
+## Advantages at a glance
+
+The profile system combines an angular design with excellent energy efficiency. Its middle seal improves thermal insulation further and protects the hardware from moisture, while the steel reinforcement gives the door a high level of stability even for large openings.
+
+## System description
+
+Glazing options range from double to triple panes, the seal colour is grey, and special shapes such as sloped or trapezoidal doors are available on request. All materials used in the profile are fully recyclable.",
+  "published": "",
+  "site": "",
+  "title": "Example Patio Door - Example Shop",
+  "wordCount": 156,
 }
 `;
 

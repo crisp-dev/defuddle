@@ -18,7 +18,7 @@ import { standardizeContent } from './standardize';
 import { standardizeFootnotes } from './elements/footnotes';
 import { ContentScorer, ContentScore } from './scoring';
 import { textPreview } from './utils';
-import { parseHTML, serializeHTML, decodeHTMLEntities, isDangerousUrl } from './utils/dom';
+import { parseHTML, serializeHTML, decodeHTMLEntities, isDangerousUrl, parseSrcset } from './utils/dom';
 
 interface StyleChange {
 	selector: string;
@@ -40,6 +40,37 @@ const METADATA_STRIP_PATTERNS = [
 	/\bread\b/gi,
 	/[|·•—–\-,.\s]/g,
 ];
+
+// Page-wrapper <form> detection (see Defuddle.pageWrapperFormRule)
+const WRAPPER_FORM_SELF_MARKERS = [
+	'form[name="_DominoForm"]',                                // Lotus Domino
+	'form#wwvFlowForm',                                        // Oracle APEX
+].join(', ');
+const WRAPPER_FORM_CHILD_MARKERS = [
+	'input[name="__VIEWSTATE"]', 'input[id="__VIEWSTATE"]',    // ASP.NET WebForms
+	'input[name="__EVENTVALIDATION"]', 'input[id="__EVENTVALIDATION"]',
+	'input[name="p_flow_id"]',                                 // Oracle APEX
+].join(', ');
+const WRAPPER_FORM_MIN_TEXT = 200;
+// Text inside these is form/script chrome, not readable content
+const NON_CONTENT_TEXT_SELECTOR = 'button, select, textarea, label, script, style, noscript, template';
+
+/** Length of an element's whitespace-collapsed text. */
+function textLength(el: Element): number {
+	return (el.textContent || '').replace(/\s+/g, ' ').trim().length;
+}
+
+/** Length of an element's readable text (form controls and scripts excluded). */
+function readableTextLength(el: Element): number {
+	let total = textLength(el);
+	for (const control of Array.from(el.querySelectorAll(NON_CONTENT_TEXT_SELECTOR))) {
+		// Count only outermost matches (e.g. a <select> inside a <label>)
+		if (!control.parentElement?.closest(NON_CONTENT_TEXT_SELECTOR)) {
+			total -= textLength(control);
+		}
+	}
+	return Math.max(0, total);
+}
 
 export class Defuddle {
 	private readonly doc: Document;
@@ -293,21 +324,12 @@ export class Defuddle {
 
 		// Parse srcset entries: each ends with a width descriptor (e.g. "424w")
 		// URLs may contain commas (e.g. Substack CDN), so split on width descriptors
-		const entryPattern = /(.+?)\s+(\d+(?:\.\d+)?)w/g;
 		let bestUrl = '';
 		let bestWidth = 0;
-		let match;
-		let lastIndex = 0;
-
-		while ((match = entryPattern.exec(srcset)) !== null) {
-			let url = match[1].trim();
-			if (lastIndex > 0) {
-				url = url.replace(/^,\s*/, '');
-			}
-			lastIndex = entryPattern.lastIndex;
-
-			const width = parseFloat(match[2]);
-			if (url && width > bestWidth) {
+		for (const { url, descriptor } of parseSrcset(srcset)) {
+			if (!descriptor.endsWith('w')) continue;
+			const width = parseFloat(descriptor);
+			if (width > bestWidth) {
 				bestWidth = width;
 				bestUrl = url;
 			}
@@ -757,13 +779,25 @@ export class Defuddle {
 		// Skip elements that are ancestors of mainContent to avoid disconnecting it
 		// Skip footnote list containers, their parents, and immediate children
 		// Skip anchor links inside headings - the heading transform handles these
+		// Decide on wrapper forms before removing anything, so text ratios aren't skewed
+		const wrapperForms = new Set<Element>();
+		let contentTextLength: number | undefined;
+		const getContentTextLength = () => contentTextLength ??= readableTextLength(mainContent ?? doc.body);
+		for (const el of elementsToRemove.keys()) {
+			const rule = el.tagName === 'FORM' ? this.pageWrapperFormRule(el, getContentTextLength) : null;
+			if (rule) {
+				wrapperForms.add(el);
+				this._log('Kept page-wrapper form:', { rule, form: this.getElementSelector(el) });
+			}
+		}
+
 		elementsToRemove.forEach(({ type, selector }, el) => {
 			if (mainContent && el.contains(mainContent)) {
 				return;
 			}
-			// Keep ASP.NET page-wrapper forms — removing them deletes all content.
+			// Keep page-wrapper forms — removing them deletes all content.
 			// Their boilerplate children are still removed by their own selectors.
-			if (el.tagName === 'FORM' && this.isPageWrapperForm(el)) {
+			if (wrapperForms.has(el)) {
 				return;
 			}
 			// Keep Framer content sections — Framer emits <header> for ordinary
@@ -805,13 +839,26 @@ export class Defuddle {
 	}
 
 	/**
-	 * A <form> that wraps the whole page rather than being an input form.
-	 * ASP.NET WebForms marks these with __VIEWSTATE / __EVENTVALIDATION inputs.
+	 * Why a <form> wraps the page content rather than being an input form, or null.
+	 *
+	 * Postback-style stacks (ASP.NET WebForms, JSF, Oracle APEX, Lotus Domino, and
+	 * many homegrown PHP/classic-ASP CMSs) wrap the whole page in one <form> so any
+	 * control can submit page state. Frameworks whose state field only appears on
+	 * the page-level form are recognised by it (JSF is not: its ViewState field is
+	 * in every <h:form>). Anything else is recognised structurally: the form holds
+	 * most of the content's readable text. Search, newsletter and comment forms hold
+	 * little text of their own (labels and buttons don't count), so they still go.
 	 */
-	private isPageWrapperForm(form: Element): boolean {
-		return !!form.querySelector(
-			'input[name="__VIEWSTATE"], input[name="__EVENTVALIDATION"], input[id="__VIEWSTATE"], input[id="__EVENTVALIDATION"]'
-		);
+	private pageWrapperFormRule(form: Element, getContentTextLength: () => number): 'framework marker' | 'text share' | null {
+		if (form.matches(WRAPPER_FORM_SELF_MARKERS) || form.querySelector(WRAPPER_FORM_CHILD_MARKERS)) {
+			return 'framework marker';
+		}
+		// Cheap reject first: readable text can't exceed raw text
+		if (textLength(form) < WRAPPER_FORM_MIN_TEXT) {
+			return null;
+		}
+		const formText = readableTextLength(form);
+		return formText >= WRAPPER_FORM_MIN_TEXT && formText >= getContentTextLength() / 2 ? 'text share' : null;
 	}
 
 	/**
@@ -1070,10 +1117,9 @@ export class Defuddle {
 	 * leaving real noise outside it (>= 200 chars, so narrowing is worthwhile).
 	 */
 	private isConfidentContentNarrowing(element: Element, body: Element): boolean {
-		const textLen = (el: Element) => (el.textContent || '').replace(/\s+/g, ' ').trim().length;
-		const bodyLen = textLen(body);
+		const bodyLen = textLength(body);
 		if (bodyLen === 0) return false;
-		const elementLen = textLen(element);
+		const elementLen = textLength(element);
 		return (elementLen / bodyLen) >= 0.6 && (bodyLen - elementLen) >= 200;
 	}
 
@@ -1125,19 +1171,9 @@ export class Defuddle {
 			if (srcset) {
 				// Parse srcset using width/density descriptors as delimiters,
 				// not commas — URLs may contain commas (e.g. CDN transform params)
-				const entryPattern = /(.+?)\s+(\d+(?:\.\d+)?[wx])/g;
-				const entries: string[] = [];
-				let match;
-				let lastIdx = 0;
-
-				while ((match = entryPattern.exec(srcset)) !== null) {
-					let url = match[1].trim();
-					if (lastIdx > 0) {
-						url = url.replace(/^,\s*/, '');
-					}
-					lastIdx = entryPattern.lastIndex;
-					entries.push(`${resolve(url)} ${match[2]}`);
-				}
+				const entries = parseSrcset(srcset).map(
+					({ url, descriptor }) => `${resolve(url)} ${descriptor}`
+				);
 
 				if (entries.length > 0) {
 					el.setAttribute('srcset', entries.join(', '));

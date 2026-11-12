@@ -52,6 +52,37 @@ export function isDangerousUrl(url: string): boolean {
 	return normalized.startsWith('javascript:') || normalized.startsWith('data:text/html');
 }
 
+export interface SrcsetEntry {
+	url: string;
+	descriptor: string;
+}
+
+const SRCSET_DESCRIPTOR = /^(\d+(?:\.\d+)?[wx])(?:,(.*))?$/;
+
+/**
+ * Parse a srcset attribute in linear time. Width/density descriptors are
+ * used as entry delimiters rather than commas, because CDN URLs may contain
+ * commas (e.g. `,w_852,c_limit`). Entries without a descriptor are ignored.
+ */
+export function parseSrcset(srcset: string): SrcsetEntry[] {
+	const entries: SrcsetEntry[] = [];
+	const tokens = srcset.trim().split(/\s+/);
+	let urlParts: string[] = [];
+
+	for (const token of tokens) {
+		if (!token) continue;
+		const match = urlParts.length > 0 ? SRCSET_DESCRIPTOR.exec(token) : null;
+		if (match) {
+			const url = urlParts.join(' ').replace(/^,\s*/, '');
+			if (url) entries.push({ url, descriptor: match[1] });
+			urlParts = match[2] ? [match[2]] : [];
+		} else {
+			urlParts.push(token);
+		}
+	}
+	return entries;
+}
+
 /**
  * Check if an element belongs directly to an ancestor table,
  * not to an intervening nested TABLE.

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8">
+	<title>Example Patio Door - Example Shop</title>
+	<link rel="canonical" href="https://example.com/products/patio-door">
+</head>
+
+<body>
+	<!-- Some CMS blocks (e.g. Shopify custom liquid sections) paste a complete
+	     <html><head><body> document into the page. The nested document elements
+	     must not survive into the extracted content: html-to-text only converts
+	     the first <body> it finds, which would drop everything outside the
+	     embedded block. -->
+	<main id="main-content">
+		<section class="shopify-section product-main">
+			<h1>Example Patio Door</h1>
+			<p>A sturdy patio door built from a six chamber profile with three seals. It keeps
+				the heat in during winter and the noise out all year round, and it fits both new
+				builds and renovations without extra work on the frame.</p>
+			<ul>
+				<li>Installation depth 82 mm</li>
+				<li>Sound insulation up to 46 dB</li>
+				<li>Delivery in about five to eight weeks</li>
+			</ul>
+		</section>
+
+		<section class="shopify-section custom-liquid">
+			<div class="section">
+				<html>
+				<head>
+					<style>.rating { display: flex; }</style>
+				</head>
+				<body>
+					<div class="rating">
+						<p>Noise protection</p>
+						<span>★ ★ ★ ★ ★</span>
+					</div>
+					<div class="rating">
+						<p>Thermal insulation</p>
+						<span>★ ★ ★ ★ ★</span>
+					</div>
+				</body>
+				</html>
+			</div>
+		</section>
+
+		<section class="shopify-section product-details">
+			<h2>Advantages at a glance</h2>
+			<p>The profile system combines an angular design with excellent energy efficiency.
+				Its middle seal improves thermal insulation further and protects the hardware from
+				moisture, while the steel reinforcement gives the door a high level of stability
+				even for large openings.</p>
+			<h2>System description</h2>
+			<p>Glazing options range from double to triple panes, the seal colour is grey, and
+				special shapes such as sloped or trapezoidal doors are available on request. All
+				materials used in the profile are fully recyclable.</p>
+		</section>
+	</main>
+</body>
+
+</html>
