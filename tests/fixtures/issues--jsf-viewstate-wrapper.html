@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8">
+	<title>Loan Simulator - Example Bank</title>
+</head>
+
+<body>
+	<!-- JSF page: the content sits inside an <h:form> that also holds several
+	     real input fields. JSF puts a javax.faces.ViewState field in every form,
+	     so it is not a wrapper marker; the form is kept because it holds most of
+	     the readable text (labels, select options and buttons don't count). -->
+	<main>
+		<form id="j_idt12" name="j_idt12" method="post" action="/simulator.xhtml">
+			<input type="hidden" name="j_idt12" value="j_idt12">
+			<h1>Loan simulator</h1>
+			<p>Use this simulator to estimate the monthly payments of a personal loan. The results are
+				given for information only and do not constitute a binding offer from the bank.</p>
+			<p>The rate shown depends on the amount borrowed and on the duration of the loan. Insurance
+				is optional and is not included in the estimate below.</p>
+			<label for="amount">Amount</label>
+			<input type="number" id="amount" name="amount">
+			<label for="duration">Duration</label>
+			<input type="number" id="duration" name="duration">
+			<label for="rate">Rate</label>
+			<input type="text" id="rate" name="rate">
+			<label for="purpose">Purpose</label>
+			<select id="purpose" name="purpose">
+				<option>Car</option>
+				<option>Home improvement</option>
+			</select>
+			<label for="email">Email</label>
+			<input type="email" id="email" name="email">
+			<button type="submit">Simulate</button>
+			<p>Once your simulation is complete, an advisor can contact you to discuss the options that
+				best match your situation and to prepare a personalised offer.</p>
+			<input type="hidden" name="javax.faces.ViewState" id="j_id1:javax.faces.ViewState:0" value="-1234567890:987654321">
+		</form>
+	</main>
+</body>
+
+</html>

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8">
+	<title>How to Store Fresh Herbs - Example Kitchen</title>
+</head>
+
+<body>
+	<!-- Negative case for page-wrapper form detection: an article followed by a
+	     newsletter signup and a comment form. Both are real input forms holding a
+	     minor share of the content and must still be removed. The signup form
+	     carries a JSF ViewState field, which JSF adds to every form, so it must
+	     not be mistaken for a page-wrapper marker. -->
+	<header>
+		<form role="search" action="/search">
+			<input type="search" name="s">
+			<button>Search</button>
+		</form>
+	</header>
+	<main>
+		<article>
+			<h1>How to store fresh herbs</h1>
+			<p>Soft herbs such as parsley, cilantro and dill keep best when treated like a bunch of
+				flowers. Trim the stems, stand them in a jar with an inch of water and cover loosely
+				with a bag before putting them in the fridge.</p>
+			<p>Hardy herbs such as rosemary, thyme and sage prefer to stay dry. Wrap them in a slightly
+				damp paper towel, place them in a container and store them in the vegetable drawer.</p>
+			<p>Basil is the exception: it dislikes the cold and should be kept on the counter, away from
+				direct sunlight, with its stems in water. Change the water every couple of days.</p>
+			<h2>Freezing herbs</h2>
+			<p>For longer storage, chop the herbs, pack them into an ice cube tray, cover with olive oil
+				and freeze. The cubes can go straight into soups, sauces and stews.</p>
+			<p>Dried herbs lose their flavour within a year, so buy them in small quantities and keep
+				them in airtight jars away from the heat of the stove.</p>
+
+			<form class="signup" action="/subscribe" method="post">
+				<h3>Get our weekly recipes</h3>
+				<p>Join thousands of home cooks and receive a new seasonal recipe every Sunday morning,
+					along with our best tips for getting the most out of your groceries.</p>
+				<p>No spam, unsubscribe at any time.</p>
+				<input type="email" name="email" placeholder="Your email">
+				<button type="submit">Subscribe</button>
+				<input type="hidden" name="javax.faces.ViewState" value="-1234567890:987654321">
+			</form>
+
+			<form class="reply" action="/comments" method="post">
+				<h3>Leave a reply</h3>
+				<p>Your email address will not be published. Required fields are marked.</p>
+				<textarea name="comment"></textarea>
+				<input type="text" name="author">
+				<input type="email" name="email">
+				<input type="url" name="url">
+				<button type="submit">Post comment</button>
+			</form>
+		</article>
+	</main>
+</body>
+
+</html>
