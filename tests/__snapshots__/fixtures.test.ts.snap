@@ -3049,6 +3049,39 @@ Recheck after every pair of adjustments. When the gap stays even all the way rou
 }
 `;
 
+exports[`Fixtures Snapshot Tests > 'issues--nested-html-document' — should match snapshot > issues--nested-html-document 1`] = `
+{
+  "author": "",
+  "content": "## Example Patio Door
+
+A sturdy patio door built from a six chamber profile with three seals. It keeps the heat in during winter and the noise out all year round, and it fits both new builds and renovations without extra work on the frame.
+
+- Installation depth 82 mm
+- Sound insulation up to 46 dB
+- Delivery in about five to eight weeks
+
+Noise protection
+
+★ ★ ★ ★ ★
+
+Thermal insulation
+
+★ ★ ★ ★ ★
+
+## Advantages at a glance
+
+The profile system combines an angular design with excellent energy efficiency. Its middle seal improves thermal insulation further and protects the hardware from moisture, while the steel reinforcement gives the door a high level of stability even for large openings.
+
+## System description
+
+Glazing options range from double to triple panes, the seal colour is grey, and special shapes such as sloped or trapezoidal doors are available on request. All materials used in the profile are fully recyclable.",
+  "published": "",
+  "site": "",
+  "title": "Example Patio Door - Example Shop",
+  "wordCount": 156,
+}
+`;
+
 exports[`Fixtures Snapshot Tests > 'math--katex' — should match snapshot > math--katex 1`] = `
 {
   "author": "Murray Bourne",

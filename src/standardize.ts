@@ -54,8 +54,8 @@ const ELEMENT_STANDARDIZATION_RULES: StandardizationRule[] = [
 	},
 
 	// Convert divs with paragraph role to actual paragraphs
-	{ 
-		selector: 'div[data-testid^="paragraph"], div[role="paragraph"]', 
+	{
+		selector: 'div[data-testid^="paragraph"], div[role="paragraph"]',
 		element: 'p',
 		transform: (el: Element, doc: Document): Element => {
 			const p = doc.createElement('p');
@@ -68,13 +68,13 @@ const ELEMENT_STANDARDIZATION_RULES: StandardizationRule[] = [
 					p.setAttribute(attr.name, attr.value);
 				}
 			});
-			
+
 			return p;
 		}
 	},
 	// Convert divs with list roles to actual lists
-	{ 
-		selector: 'div[role="list"]', 
+	{
+		selector: 'div[role="list"]',
 		element: 'ul',
 		// Custom handler for list type detection and transformation
 		transform: (el: Element, doc: Document): Element => {
@@ -82,16 +82,16 @@ const ELEMENT_STANDARDIZATION_RULES: StandardizationRule[] = [
 			const firstItem = el.querySelector('div[role="listitem"] .label');
 			const label = firstItem?.textContent?.trim() || '';
 			const isOrdered = label.match(/^\d+\)/);
-			
+
 			// Create the appropriate list type
 			const list = doc.createElement(isOrdered ? 'ol' : 'ul');
-			
+
 			// Process each list item
 			const items = el.querySelectorAll('div[role="listitem"]');
 			items.forEach(item => {
 				const li = doc.createElement('li');
 				const content = item.querySelector('.content');
-				
+
 				if (content) {
 					// Convert any paragraph divs inside content
 					const paragraphDivs = content.querySelectorAll('div[role="paragraph"]');
@@ -100,22 +100,22 @@ const ELEMENT_STANDARDIZATION_RULES: StandardizationRule[] = [
 						transferContent(div, p);
 						div.replaceWith(p);
 					});
-					
+
 					// Convert any nested lists recursively
 					const nestedLists = content.querySelectorAll('div[role="list"]');
 					nestedLists.forEach(nestedList => {
 						const firstNestedItem = nestedList.querySelector('div[role="listitem"] .label');
 						const nestedLabel = firstNestedItem?.textContent?.trim() || '';
 						const isNestedOrdered = nestedLabel.match(/^\d+\)/);
-						
+
 						const newNestedList = doc.createElement(isNestedOrdered ? 'ol' : 'ul');
-						
+
 						// Process nested items
 						const nestedItems = nestedList.querySelectorAll('div[role="listitem"]');
 						nestedItems.forEach(nestedItem => {
 							const nestedLi = doc.createElement('li');
 							const nestedContent = nestedItem.querySelector('.content');
-							
+
 							if (nestedContent) {
 								// Convert paragraph divs in nested items
 								const nestedParagraphs = nestedContent.querySelectorAll('div[role="paragraph"]');
@@ -126,30 +126,30 @@ const ELEMENT_STANDARDIZATION_RULES: StandardizationRule[] = [
 								});
 								transferContent(nestedContent, nestedLi);
 							}
-							
+
 							newNestedList.appendChild(nestedLi);
 						});
-						
+
 						nestedList.replaceWith(newNestedList);
 					});
-					
+
 					transferContent(content, li);
 				}
-				
+
 				list.appendChild(li);
 			});
-			
+
 			return list;
 		}
 	},
-	{ 
-		selector: 'div[role="listitem"]', 
+	{
+		selector: 'div[role="listitem"]',
 		element: 'li',
 		// Custom handler for list item content
 		transform: (el: Element, doc: Document): Element => {
 			const content = el.querySelector('.content');
 			if (!content) return el;
-			
+
 			// Convert any paragraph divs inside content
 			const paragraphDivs = content.querySelectorAll('div[role="paragraph"]');
 			paragraphDivs.forEach(div => {
@@ -157,7 +157,7 @@ const ELEMENT_STANDARDIZATION_RULES: StandardizationRule[] = [
 				transferContent(div, p);
 				div.replaceWith(p);
 			});
-			
+
 			return content;
 		}
 	}
@@ -165,6 +165,9 @@ const ELEMENT_STANDARDIZATION_RULES: StandardizationRule[] = [
 
 export function standardizeContent(element: Element, metadata: DefuddleMetadata, doc: Document, debug: boolean = false): void {
 	_debug = debug;
+
+	// Unwrap nested <html>/<body> (and drop nested <head>) left by embedded documents
+	unwrapNestedDocumentElements(element);
 
 	standardizeSpaces(element);
 
@@ -241,6 +244,31 @@ export function standardizeContent(element: Element, metadata: DefuddleMetadata,
 }
 
 /**
+ * Some CMS blocks (e.g. Shopify custom liquid sections) embed a full
+ * <html><head>…</head><body>…</body></html> document inside the page.
+ * Those nested document elements end up in the extracted content and break
+ * downstream consumers: html-to-text only converts the first <body> it finds,
+ * dropping everything outside it. Unwrap <html>/<body> (keeping their
+ * children) and remove <head>, which holds no readable content.
+ */
+function unwrapNestedDocumentElements(element: Element): void {
+	const heads = Array.from(element.querySelectorAll('head'));
+	heads.forEach(head => head.remove());
+
+	const wrappers = Array.from(element.querySelectorAll('html, body'));
+	wrappers.forEach(wrapper => {
+		while (wrapper.firstChild) {
+			wrapper.parentNode?.insertBefore(wrapper.firstChild, wrapper);
+		}
+		wrapper.remove();
+	});
+
+	if (heads.length || wrappers.length) {
+		logDebug(_debug, 'Unwrapped nested document elements:', heads.length + wrappers.length);
+	}
+}
+
+/**
  * Wrap <code> elements that have white-space: pre (via inline style)
  * in a <pre> element, so they get treated as code blocks.
  */
@@ -276,7 +304,7 @@ function standardizeSpaces(element: Element): void {
 			const text = node.textContent || '';
 			// Replace &nbsp; with regular spaces, preserving them between words
 			const newText = text.replace(/\xA0/g, ' ');
-			
+
 			if (newText !== text) {
 				node.textContent = newText;
 			}
@@ -436,7 +464,7 @@ function stripUnwantedAttributes(element: Element, debug: boolean): void {
 
 		const attributes = Array.from(el.attributes);
 		const tag = el.tagName.toLowerCase();
-		
+
 		attributes.forEach(attr => {
 			const attrName = attr.name.toLowerCase();
 			const attrValue = attr.value;
@@ -460,8 +488,8 @@ function stripUnwantedAttributes(element: Element, debug: boolean): void {
 
 			// In debug mode, allow debug attributes and data- attributes
 			if (debug) {
-				if (!ALLOWED_ATTRIBUTES.has(attrName) && 
-					!ALLOWED_ATTRIBUTES_DEBUG.has(attrName) && 
+				if (!ALLOWED_ATTRIBUTES.has(attrName) &&
+					!ALLOWED_ATTRIBUTES_DEBUG.has(attrName) &&
 					!attrName.startsWith('data-')) {
 					el.removeAttribute(attr.name);
 					attributeCount++;
@@ -588,12 +616,12 @@ function stripExtraBrElements(element: Element): void {
 		if (consecutiveBrs.length > 0) {
 			const lastBr = consecutiveBrs[consecutiveBrs.length - 1];
 			let node: Node | null = currentNode.previousSibling;
-			
+
 			// Skip whitespace text nodes
 			while (node && isTextNode(node) && !node.textContent?.trim()) {
 				node = node.previousSibling;
 			}
-			
+
 			if (node === lastBr) {
 				isConsecutive = true;
 			}
@@ -711,7 +739,7 @@ function removeEmptyLines(element: Element, doc: Document): void {
 
 		// Special handling for block elements
 		const isBlockElement = getComputedStyle(node)?.display === 'block';
-		
+
 		// Remove whitespace-only text nodes at start/end
 		const whitespacePattern = isBlockElement ? /^[\n\r\t \u200C\u200B\u200D\u200E\u200F\uFEFF\xA0]*$/ : /^[\n\r\t\u200C\u200B\u200D\u200E\u200F\uFEFF]*$/;
 
@@ -747,22 +775,22 @@ function removeEmptyLines(element: Element, doc: Document): void {
 					// Get the text content
 					const nextContent = next.textContent || '';
 					const currentContent = current.textContent || '';
-					
+
 					// Don't add space if:
 					// 1. Next content starts with punctuation or closing parenthesis
 					// 2. Current content ends with punctuation or opening parenthesis
 					// 3. There's already a space
 					const nextStartsWithPunctuation = nextContent.match(/^[,.!?:;)\]]/);
 					const currentEndsWithPunctuation = currentContent.match(/[,.!?:;(\[]\s*$/);
-					
-					const hasSpace = (isTextNode(current) && 
+
+					const hasSpace = (isTextNode(current) &&
 									(current.textContent || '').endsWith(' ')) ||
-									(isTextNode(next) && 
+									(isTextNode(next) &&
 									(next.textContent || '').startsWith(' '));
-					
+
 					// Only add space if none of the above conditions are true
-					if (!nextStartsWithPunctuation && 
-						!currentEndsWithPunctuation && 
+					if (!nextStartsWithPunctuation &&
+						!currentEndsWithPunctuation &&
 						!hasSpace) {
 						const space = doc.createTextNode(' ');
 						node.insertBefore(space, next);
@@ -941,16 +969,16 @@ function flattenWrapperElements(element: Element, doc: Document): void {
 
 	const shouldPreserveElement = (el: Element): boolean => {
 		const tagName = el.tagName.toLowerCase();
-		
+
 		// Check if element should be preserved
 		if (PRESERVE_ELEMENTS.has(tagName)) return true;
-		
+
 		// Check for semantic roles
 		const role = el.getAttribute('role');
 		if (role && ['article', 'main', 'navigation', 'banner', 'contentinfo'].includes(role)) {
 			return true;
 		}
-		
+
 		// Check for semantic classes
 		const className = el.className;
 		if (typeof className === 'string' && className.toLowerCase().match(/(?:article|main|content|footnote|reference|bibliography)/)) {
@@ -959,14 +987,14 @@ function flattenWrapperElements(element: Element, doc: Document): void {
 
 		// Check if element contains mixed content types that should be preserved
 		const children = Array.from(el.children);
-		const hasPreservedElements = children.some(child => 
+		const hasPreservedElements = children.some(child =>
 			PRESERVE_ELEMENTS.has(child.tagName.toLowerCase()) ||
 			child.getAttribute('role') === 'article' ||
-			(child.className && typeof child.className === 'string' && 
+			(child.className && typeof child.className === 'string' &&
 				child.className.toLowerCase().match(/(?:article|main|content|footnote|reference|bibliography)/))
 		);
 		if (hasPreservedElements) return true;
-		
+
 		return false;
 	};
 
@@ -982,12 +1010,12 @@ function flattenWrapperElements(element: Element, doc: Document): void {
 		// Check if it only contains other block elements
 		const children = Array.from(el.children);
 		if (children.length === 0) return true;
-		
+
 		// Check if all children are block elements
 		const allBlockElements = children.every(child => {
 			const tag = child.tagName.toLowerCase();
-			return BLOCK_ELEMENTS_SET.has(tag) || 
-				   tag === 'p' || tag === 'h1' || tag === 'h2' || 
+			return BLOCK_ELEMENTS_SET.has(tag) ||
+				   tag === 'p' || tag === 'h1' || tag === 'h2' ||
 				   tag === 'h3' || tag === 'h4' || tag === 'h5' || tag === 'h6' ||
 				   tag === 'ul' || tag === 'ol' || tag === 'pre' || tag === 'blockquote' ||
 				   tag === 'figure';
@@ -1000,7 +1028,7 @@ function flattenWrapperElements(element: Element, doc: Document): void {
 		if (isWrapper) return true;
 
 		// Check if it has excessive whitespace or empty text nodes
-		const textNodes = Array.from(el.childNodes).filter(node => 
+		const textNodes = Array.from(el.childNodes).filter(node =>
 			isTextNode(node) && node.textContent?.trim()
 		);
 		if (textNodes.length === 0) return true;
@@ -1055,7 +1083,7 @@ function flattenWrapperElements(element: Element, doc: Document): void {
 				const tag = child.tagName.toLowerCase();
 				return INLINE_ELEMENTS.has(tag);
 			});
-			
+
 			if (onlyBlockElements) {
 				const fragment = doc.createDocumentFragment();
 				while (el.firstChild) {
@@ -1098,7 +1126,7 @@ function flattenWrapperElements(element: Element, doc: Document): void {
 		if (el.children.length === 1) {
 			const child = el.firstElementChild!;
 			const childTag = child.tagName.toLowerCase();
-			
+
 			// Only unwrap if the single child is a block element and not preserved
 			if (BLOCK_ELEMENTS_SET.has(childTag) && !shouldPreserveElement(child)) {
 				el.replaceWith(child);
@@ -1137,7 +1165,7 @@ function flattenWrapperElements(element: Element, doc: Document): void {
 		const topElements = Array.from(element.children).filter(
 			el => BLOCK_ELEMENTS_SET.has(el.tagName.toLowerCase())
 		);
-		
+
 		let modified = false;
 		topElements.forEach(el => {
 			if (processElement(el)) {
@@ -1151,7 +1179,7 @@ function flattenWrapperElements(element: Element, doc: Document): void {
 	const processRemainingElements = () => {
 		// Get all wrapper elements
 		const allElements = Array.from(element.querySelectorAll(BLOCK_ELEMENTS_SELECTOR));
-		
+
 		// OPTIMIZED: Pre-calculate depths in a single pass using Map
 		// instead of calculating inside sort comparator (O(n log n) times)
 		const depthCache = new Map<Element, number>();
@@ -1167,7 +1195,7 @@ function flattenWrapperElements(element: Element, doc: Document): void {
 			depthCache.set(el, depth);
 			return depth;
 		};
-		
+
 		// Sort by pre-calculated depth (deepest first)
 		allElements.sort((a, b) => getDepth(b) - getDepth(a));
 
@@ -1184,12 +1212,12 @@ function flattenWrapperElements(element: Element, doc: Document): void {
 	const finalCleanup = () => {
 		const remainingElements = Array.from(element.querySelectorAll(BLOCK_ELEMENTS_SELECTOR));
 		let modified = false;
-		
+
 		remainingElements.forEach(el => {
 			// Check if element only contains paragraphs
 			const children = Array.from(el.children);
 			const onlyParagraphs = children.length > 0 && children.every(child => child.tagName.toLowerCase() === 'p');
-			
+
 			// Unwrap if it only contains paragraphs OR is a non-preserved wrapper element
 			if (onlyParagraphs || (!shouldPreserveElement(el) && isWrapperElement(el))) {
 				const fragment = doc.createDocumentFragment();

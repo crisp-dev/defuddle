@@ -128,6 +128,8 @@ const ELEMENT_STANDARDIZATION_RULES = [
 ];
 function standardizeContent(element, metadata, doc, debug = false) {
     _debug = debug;
+    // Unwrap nested <html>/<body> (and drop nested <head>) left by embedded documents
+    unwrapNestedDocumentElements(element);
     standardizeSpaces(element);
     // Remove HTML comments
     removeHtmlComments(element);
@@ -186,6 +188,29 @@ function standardizeContent(element, metadata, doc, debug = false) {
         removeTrailingHeadings(element);
         stripExtraBrElements(element);
         (0, utils_1.logDebug)(_debug, 'Debug mode: Skipping div flattening to preserve structure');
+    }
+}
+/**
+ * Some CMS blocks (e.g. Shopify custom liquid sections) embed a full
+ * <html><head>…</head><body>…</body></html> document inside the page.
+ * Those nested document elements end up in the extracted content and break
+ * downstream consumers: html-to-text only converts the first <body> it finds,
+ * dropping everything outside it. Unwrap <html>/<body> (keeping their
+ * children) and remove <head>, which holds no readable content.
+ */
+function unwrapNestedDocumentElements(element) {
+    const heads = Array.from(element.querySelectorAll('head'));
+    heads.forEach(head => head.remove());
+    const wrappers = Array.from(element.querySelectorAll('html, body'));
+    wrappers.forEach(wrapper => {
+        var _a;
+        while (wrapper.firstChild) {
+            (_a = wrapper.parentNode) === null || _a === void 0 ? void 0 : _a.insertBefore(wrapper.firstChild, wrapper);
+        }
+        wrapper.remove();
+    });
+    if (heads.length || wrappers.length) {
+        (0, utils_1.logDebug)(_debug, 'Unwrapped nested document elements:', heads.length + wrappers.length);
     }
 }
 /**

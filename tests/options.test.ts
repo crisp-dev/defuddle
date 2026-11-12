@@ -46,6 +46,18 @@ describe('Defuddle Options Tests', () => {
 		});
 	});
 
+	describe('htmlToText option', () => {
+		test('converts all content when the page embeds a nested <html><body> document', async () => {
+			const html = readFileSync(join(__dirname, 'fixtures', 'issues--nested-html-document.html'), 'utf-8');
+			const result = await Defuddle(html, 'https://example.com/products/patio-door', { htmlToText: true });
+
+			expect(result.content).toContain('six chamber profile');
+			expect(result.content).toContain('Noise protection');
+			expect(result.content).toContain('fully recyclable');
+			expect(result.content).not.toContain('display: flex');
+		});
+	});
+
 	describe('removeExactSelectors option', () => {
 		test('removeExactSelectors: false preserves exact selector matches', async () => {
 			const result1 = await Defuddle(fixtureHtml, fixtureUrl);
