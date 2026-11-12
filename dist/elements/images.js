@@ -792,27 +792,11 @@ function extractFirstUrlFromSrcset(srcset) {
     if (!srcset || !srcset.trim())
         return null;
     const trimmed = srcset.trim();
-    // Match srcset entries by finding URL + descriptor pairs.
-    // Each entry ends with a width descriptor (e.g., "424w") or density descriptor (e.g., "2x").
-    // The URL is everything before the whitespace that precedes the descriptor.
-    // This handles URLs containing commas (which would break a simple comma-split).
-    const entryPattern = /(.+?)\s+(\d+(?:\.\d+)?[wx])/g;
-    let match;
-    let lastIndex = 0;
-    while ((match = entryPattern.exec(trimmed)) !== null) {
-        // Extract URL from this entry, trimming any leading comma+whitespace from previous entry
-        let url = match[1].trim();
-        if (lastIndex > 0) {
-            // Remove leading comma separator from previous entry
-            url = url.replace(/^,\s*/, '');
-        }
-        lastIndex = entryPattern.lastIndex;
-        if (!url)
-            continue;
+    // Entries are split on width/density descriptors, not commas (see parseSrcset)
+    for (const { url } of (0, dom_1.parseSrcset)(trimmed)) {
         // Skip SVG data URLs
-        if (isSvgDataUrl(url))
-            continue;
-        return url;
+        if (!isSvgDataUrl(url))
+            return url;
     }
     // Fallback: try extracting URL before first whitespace (for srcset with single entry and no descriptor)
     const urlMatch = trimmed.match(urlPattern);

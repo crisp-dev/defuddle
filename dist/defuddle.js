@@ -291,19 +291,13 @@ class Defuddle {
             return img.getAttribute('src') || '';
         // Parse srcset entries: each ends with a width descriptor (e.g. "424w")
         // URLs may contain commas (e.g. Substack CDN), so split on width descriptors
-        const entryPattern = /(.+?)\s+(\d+(?:\.\d+)?)w/g;
         let bestUrl = '';
         let bestWidth = 0;
-        let match;
-        let lastIndex = 0;
-        while ((match = entryPattern.exec(srcset)) !== null) {
-            let url = match[1].trim();
-            if (lastIndex > 0) {
-                url = url.replace(/^,\s*/, '');
-            }
-            lastIndex = entryPattern.lastIndex;
-            const width = parseFloat(match[2]);
-            if (url && width > bestWidth) {
+        for (const { url, descriptor } of (0, dom_1.parseSrcset)(srcset)) {
+            if (!descriptor.endsWith('w'))
+                continue;
+            const width = parseFloat(descriptor);
+            if (width > bestWidth) {
                 bestWidth = width;
                 bestUrl = url;
             }
@@ -1016,18 +1010,7 @@ class Defuddle {
             if (srcset) {
                 // Parse srcset using width/density descriptors as delimiters,
                 // not commas — URLs may contain commas (e.g. CDN transform params)
-                const entryPattern = /(.+?)\s+(\d+(?:\.\d+)?[wx])/g;
-                const entries = [];
-                let match;
-                let lastIdx = 0;
-                while ((match = entryPattern.exec(srcset)) !== null) {
-                    let url = match[1].trim();
-                    if (lastIdx > 0) {
-                        url = url.replace(/^,\s*/, '');
-                    }
-                    lastIdx = entryPattern.lastIndex;
-                    entries.push(`${resolve(url)} ${match[2]}`);
-                }
+                const entries = (0, dom_1.parseSrcset)(srcset).map(({ url, descriptor }) => `${resolve(url)} ${descriptor}`);
                 if (entries.length > 0) {
                     el.setAttribute('srcset', entries.join(', '));
                 }
